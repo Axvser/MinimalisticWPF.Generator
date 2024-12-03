@@ -45,7 +45,7 @@ namespace MinimalisticWPF.Generator
 
             GenerateAop(context, input);
 
-            foreach (var classDeclaration in classes.Where(x=> HasAspectOrientedAttribute(x)))
+            foreach (var classDeclaration in classes.Where(x => HasAspectOrientedAttribute(x)))
             {
                 SemanticModel model = compilation.GetSemanticModel(classDeclaration.SyntaxTree);
                 var classSymbol = model.GetDeclaredSymbol(classDeclaration);
@@ -75,7 +75,7 @@ namespace MinimalisticWPF.Generator
             {
                 kvp.Value.AppendLine("}");
                 kvp.Value.AppendLine("}");
-                context.AddSource($"{kvp.Key.Item1.Name}_{kvp.Key.Item2.Identifier.Text}_AOP.g.cs", SourceText.From(kvp.Value.ToString(), Encoding.UTF8));
+                context.AddSource($"{kvp.Key.Item1.MetadataName.Replace('.', '_')}_{kvp.Key.Item2.Identifier.Text}_AOP.g.cs", SourceText.From(kvp.Value.ToString(), Encoding.UTF8));
             }
         }
         private static void GenerateUsing(StringBuilder sourceBuilder)//命名空间引用
@@ -92,7 +92,7 @@ namespace MinimalisticWPF.Generator
         }
         private static void GeneratePartialClass(StringBuilder sourceBuilder, ClassDeclarationSyntax cs, INamedTypeSymbol classSymbol, bool isAop)//分部类型
         {
-            var aop = isAop ? $"IAop{cs.Identifier.Text}In{classSymbol.ContainingNamespace}" : string.Empty;
+            var aop = isAop ? $"IAop{cs.Identifier.Text}In{classSymbol.ContainingNamespace.ToString().Replace('.', '_')}" : string.Empty;
             var source = $$"""
                            {{cs.Modifiers}} class {{cs.Identifier.Text}} : {{aop}}
                            {
@@ -102,7 +102,7 @@ namespace MinimalisticWPF.Generator
         private static void GenerateProxy(StringBuilder sourceBuilder, ClassDeclarationSyntax cs, INamedTypeSymbol classSymbol, bool isAop)//动态代理
         {
             if (!isAop) return;
-            var aop = isAop ? $"IAop{cs.Identifier.Text}In{classSymbol.ContainingNamespace}" : string.Empty;
+            var aop = isAop ? $"IAop{cs.Identifier.Text}In{classSymbol.ContainingNamespace.ToString().Replace('.', '_')}" : string.Empty;
             sourceBuilder.AppendLine($$"""
                                           public {{aop}} Proxy { get; private set; }
                                        """);
@@ -122,7 +122,7 @@ namespace MinimalisticWPF.Generator
                 string namespaceName = GetNamespace(classDeclaration);
 
                 // 生成接口名称
-                string interfaceName = $"IAop{classDeclaration.Identifier.Text}In{namespaceName}";
+                string interfaceName = $"IAop{classDeclaration.Identifier.Text}In{namespaceName.Replace('.', '_')}";
 
                 // 创建接口声明并继承自 IProxy
                 var baseList = SyntaxFactory.BaseList(

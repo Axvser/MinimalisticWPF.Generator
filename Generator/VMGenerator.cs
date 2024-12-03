@@ -78,7 +78,7 @@ namespace MinimalisticWPF.Generator
             {
                 kvp.Value.AppendLine("}");
                 kvp.Value.AppendLine("}");
-                context.AddSource($"{kvp.Key.Item1.Name}_{kvp.Key.Item2.Identifier.Text}_VM.g.cs", SourceText.From(kvp.Value.ToString(), Encoding.UTF8));
+                context.AddSource($"{kvp.Key.Item1.MetadataName.Replace('.','_')}_{kvp.Key.Item2.Identifier.Text}_VM.g.cs", SourceText.From(kvp.Value.ToString(), Encoding.UTF8));
             }
         }
         private static void GenerateUsing(StringBuilder sourceBuilder, bool isAop)
@@ -119,7 +119,7 @@ namespace MinimalisticWPF.Generator
         }
         private static void GenerateConstruction(StringBuilder sourceBuilder, ClassDeclarationSyntax cs, INamedTypeSymbol classSymbol, bool isAop)
         {
-            var aop = isAop ? $"IAop{cs.Identifier.Text}In{classSymbol.ContainingNamespace}" : string.Empty;
+            var aop = isAop ? $"IAop{cs.Identifier.Text}In{classSymbol.ContainingNamespace.ToString().Replace('.', '_')}" : string.Empty;
             sourceBuilder.AppendLine($"   public {cs.Identifier.Text} ()");
             sourceBuilder.AppendLine("   {");
             sourceBuilder.AppendLine(isAop ? $"      Proxy = this.CreateProxy<{aop}>();" : string.Empty);
