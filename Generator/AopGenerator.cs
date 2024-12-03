@@ -45,7 +45,7 @@ namespace MinimalisticWPF.Generator
 
             GenerateAop(context, input);
 
-            foreach (var classDeclaration in classes)
+            foreach (var classDeclaration in classes.Where(x=> HasAspectOrientedAttribute(x)))
             {
                 SemanticModel model = compilation.GetSemanticModel(classDeclaration.SyntaxTree);
                 var classSymbol = model.GetDeclaredSymbol(classDeclaration);
