@@ -1,1 +1,1 @@
-# MinimalisticWPF.Generator
+# Source generation function of MinimalisticWPF
