@@ -54,7 +54,6 @@ namespace MinimalisticWPF.Generator
                 foreach (var item in fc.VMPropertyGenerations)
                 {
                     sourceBuilder.AppendLine(item);
-                    sourceBuilder.AppendLine();
                 }
             }
             foreach (var kvp in generatedSources)

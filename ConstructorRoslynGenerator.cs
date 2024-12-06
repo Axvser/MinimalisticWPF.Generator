@@ -19,7 +19,7 @@ namespace MinimalisticWPF.Generator
         {
             if (!isAop) return;
 
-            var methods = namedTypeSymbol.GetMembers().OfType<IMethodSymbol>().Where(m => m.GetAttributes().Any(att => att.AttributeClass?.Name == "VMInitialization"));
+            var methods = namedTypeSymbol.GetMembers().OfType<IMethodSymbol>().Where(m => m.GetAttributes().Any(att => att.AttributeClass?.Name == "VMInitializationAttribute"));
             StringBuilder builder = new StringBuilder();
             var strAop = $"IAop{namedTypeSymbol.Name}In{namedTypeSymbol.GetNameSpaceWithOutDot()}";
             if (isAop)

@@ -28,7 +28,7 @@ namespace MinimalisticWPF.Generator
         {
             fieldSymbols = classSymbol.GetMembers()
                     .OfType<IFieldSymbol>()
-                    .Where(field => field.GetAttributes().Any(attr => attr.AttributeClass?.Name == "VMProperty"));
+                    .Where(field => field.GetAttributes().Any(attr => attr.AttributeClass?.Name == "VMPropertyAttribute"));
             return fieldSymbols.Any();
         }
 
@@ -95,7 +95,7 @@ namespace MinimalisticWPF.Generator
             {
                 foreach (var attribute in attributeList.Attributes)
                 {
-                    if (attribute.Name.ToString() == "VMProperty")
+                    if (attribute.Name.ToString() == "VMPropertyAttribute")
                     {
                         return true;
                     }
