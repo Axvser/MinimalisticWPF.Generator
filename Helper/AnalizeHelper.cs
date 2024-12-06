@@ -16,10 +16,6 @@ namespace MinimalisticWPF.Generator
         {
             return node is ClassDeclarationSyntax classDecl && classDecl.Modifiers.Any(m => m.IsKind(SyntaxKind.PartialKeyword));
         }
-        internal static bool IsAopClass(SyntaxNode node)
-        {
-            return node is ClassDeclarationSyntax classDecl && HasAspectOrientedAttribute(classDecl);
-        }
         internal static bool IsAopClass(ClassDeclarationSyntax classDecl)
         {
             return HasAspectOrientedAttribute(classDecl);

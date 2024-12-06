@@ -8,7 +8,7 @@
 		<Nullable>enable</Nullable>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<Title>MinimalisticWPF.Generator</Title>
-		<Version>1.1.0</Version>
+		<Version>1.2.0</Version>
 		<Authors>Axvser</Authors>
 		<PackageProjectUrl>https://github.com/Axvser/MinimalisticWPF.Generator</PackageProjectUrl>
 		<RepositoryUrl>https://github.com/Axvser/MinimalisticWPF.Generator</RepositoryUrl>
@@ -16,10 +16,12 @@
 		<NeutralLanguage>zh-CN</NeutralLanguage>
 	</PropertyGroup>
 	<ItemGroup>
-		<PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.11.0" PrivateAssets="all" />
-		<None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+	  <Compile Remove="Unit\**" />
+	  <EmbeddedResource Remove="Unit\**" />
+	  <None Remove="Unit\**" />
 	</ItemGroup>
 	<ItemGroup>
-	  <Folder Include="Unit\" />
+		<PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.11.0" PrivateAssets="all" />
+		<None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="true" />
 	</ItemGroup>
 </Project>

@@ -34,6 +34,7 @@ namespace MinimalisticWPF.Generator
 
                 if (!AnalizeHelper.IsVMFieldExist(classSymbol, out var vmfields)) continue;
                 var isAop = AnalizeHelper.IsAopClass(classDeclaration);
+                var conGen = classSymbol.GetConstructorGenerator(isAop);
 
                 if (!generatedSources.TryGetValue(Tuple.Create(classSymbol, classDeclaration), out var sourceBuilder))
                 {
@@ -42,14 +43,18 @@ namespace MinimalisticWPF.Generator
                     sourceBuilder.GenerateUsing(isAop);
                     sourceBuilder.GenerateNamespace(classSymbol);
                     sourceBuilder.GenerateVMClassPartialClass(classDeclaration, isAop);
+                    sourceBuilder.AppendLine(conGen.Constructor);
                     sourceBuilder.GenerateIPC();
-                    sourceBuilder.GenerateConstruction(classDeclaration, classSymbol, isAop);
+                    sourceBuilder.AppendLine();
                     generatedSources[Tuple.Create(classSymbol, classDeclaration)] = sourceBuilder;
                 }
 
-                foreach (var item in vmfields)
+                var fc = classSymbol.GetFieldGenerator();
+
+                foreach (var item in fc.VMPropertyGenerations)
                 {
-                    sourceBuilder.GenerateProperty(item);
+                    sourceBuilder.AppendLine(item);
+                    sourceBuilder.AppendLine();
                 }
             }
             foreach (var kvp in generatedSources)
