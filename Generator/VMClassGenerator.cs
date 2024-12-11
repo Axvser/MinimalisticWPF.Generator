@@ -34,7 +34,7 @@ namespace MinimalisticWPF.Generator
 
                 var isAop = AnalizeHelper.IsAopClass(classDeclaration);
                 var isDynTheme = AnalizeHelper.IsDynamicTheme(classDeclaration);
-                if (!AnalizeHelper.IsVMFieldExist(classSymbol, out var vmfields) && !isAop && isDynTheme) continue;
+                if (!(AnalizeHelper.IsVMFieldExist(classSymbol, out var vmfields) || isAop || isDynTheme)) continue;
 
                 var conGen = classSymbol.GetConstructorGenerator(isAop, isDynTheme);
 
