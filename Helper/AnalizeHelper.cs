@@ -18,11 +18,33 @@ namespace MinimalisticWPF.Generator
         }
         internal static bool IsAopClass(ClassDeclarationSyntax classDecl)
         {
-            return HasAspectOrientedAttribute(classDecl);
+            var attributeLists = classDecl.AttributeLists;
+            foreach (var attributeList in attributeLists)
+            {
+                foreach (var attribute in attributeList.Attributes)
+                {
+                    if (attribute.Name.ToString() == "AspectOriented")
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
         }
-        internal static bool IsVMField(FieldDeclarationSyntax fieldDecl)
+        internal static bool IsDynamicTheme(ClassDeclarationSyntax classDecl)
         {
-            return HasVMPropertyAttribute(fieldDecl);
+            var attributeLists = classDecl.AttributeLists;
+            foreach (var attributeList in attributeLists)
+            {
+                foreach (var attribute in attributeList.Attributes)
+                {
+                    if (attribute.Name.ToString() == "Theme")
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
         }
         internal static bool IsVMFieldExist(INamedTypeSymbol classSymbol, out IEnumerable<IFieldSymbol> fieldSymbols)
         {
@@ -71,37 +93,6 @@ namespace MinimalisticWPF.Generator
         internal static string GetPropertyNameByFieldName(VariableDeclaratorSyntax variable)
         {
             return char.ToUpper(variable.Identifier.Text[1]) + variable.Identifier.Text.Substring(2);
-        }
-
-        private static bool HasAspectOrientedAttribute(ClassDeclarationSyntax classDeclaration)
-        {
-            var attributeLists = classDeclaration.AttributeLists;
-            foreach (var attributeList in attributeLists)
-            {
-                foreach (var attribute in attributeList.Attributes)
-                {
-                    if (attribute.Name.ToString() == "AspectOriented")
-                    {
-                        return true;
-                    }
-                }
-            }
-            return false;
-        }
-        private static bool HasVMPropertyAttribute(FieldDeclarationSyntax fieldDeclaration)
-        {
-            var attributeLists = fieldDeclaration.AttributeLists;
-            foreach (var attributeList in attributeLists)
-            {
-                foreach (var attribute in attributeList.Attributes)
-                {
-                    if (attribute.Name.ToString() == "VMPropertyAttribute")
-                    {
-                        return true;
-                    }
-                }
-            }
-            return false;
         }
     }
 }

@@ -8,17 +8,15 @@ namespace MinimalisticWPF.Generator
 {
     public class ConstructorRoslynGenerator
     {
-        internal ConstructorRoslynGenerator(INamedTypeSymbol namedTypeSymbol, bool isAop)
+        internal ConstructorRoslynGenerator(INamedTypeSymbol namedTypeSymbol, bool isAop, bool isDynTheme)
         {
-            GenerateConstructor(namedTypeSymbol, isAop);
+            GenerateConstructor(namedTypeSymbol, isAop, isDynTheme);
         }
 
         public string Constructor { get; private set; } = string.Empty;
 
-        private void GenerateConstructor(INamedTypeSymbol namedTypeSymbol, bool isAop)
+        private void GenerateConstructor(INamedTypeSymbol namedTypeSymbol, bool isAop, bool isDynTheme)
         {
-            if (!isAop) return;
-
             var methods = namedTypeSymbol.GetMembers().OfType<IMethodSymbol>().Where(m => m.GetAttributes().Any(att => att.AttributeClass?.Name == "VMInitializationAttribute"));
             StringBuilder builder = new StringBuilder();
             var strAop = $"IAop{namedTypeSymbol.Name}In{namedTypeSymbol.GetNameSpaceWithOutDot()}";
@@ -34,6 +32,10 @@ namespace MinimalisticWPF.Generator
             if (isAop)
             {
                 builder.AppendLine($"         Proxy = this.CreateProxy<{strAop}>();");
+            }
+            if (isDynTheme)
+            {
+                builder.AppendLine($"         this.ApplyGlobalTheme();");
             }
             foreach (var method in methods)
             {

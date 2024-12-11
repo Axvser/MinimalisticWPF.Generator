@@ -15,9 +15,9 @@ namespace MinimalisticWPF.Generator
             var generatorParams = vmProperties.Select(p => (p, csMembers.OfType<IMethodSymbol>().Where(m => m.GetAttributes().Any(attr => attr.AttributeClass?.Name == "VMWatcherAttribute" && (m.Name.Contains(p.Name) || m.Name.Contains(char.ToUpper(p.Name[1]) + p.Name.Substring(2)))))));
             return new FieldRoslynGenerator(generatorParams);
         }
-        public static ConstructorRoslynGenerator GetConstructorGenerator(this INamedTypeSymbol namedTypeSymbol, bool isAop)
+        public static ConstructorRoslynGenerator GetConstructorGenerator(this INamedTypeSymbol namedTypeSymbol, bool isAop, bool isDynTheme)
         {
-            return new ConstructorRoslynGenerator(namedTypeSymbol, isAop);
+            return new ConstructorRoslynGenerator(namedTypeSymbol, isAop, isDynTheme);
         }
         public static string GetNameSpaceWithOutDot(this INamedTypeSymbol namedTypeSymbol)
         {

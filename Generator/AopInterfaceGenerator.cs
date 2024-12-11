@@ -35,9 +35,8 @@ namespace MinimalisticWPF.Generator
                     .AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword))
                     .WithBaseList(baseList);
 
-                foreach (var field in classDeclaration.Members.OfType<FieldDeclarationSyntax>())
+                foreach (var field in classDeclaration.Members.OfType<FieldDeclarationSyntax>().Where(fd => fd.AttributeLists.Any(atts => atts.Attributes.Any(att => att.ToString() == "VMProperty"))))
                 {
-                    if (!AnalizeHelper.IsVMField(field)) continue;
                     foreach (var variable in field.Declaration.Variables)
                     {
                         var propertyName = AnalizeHelper.GetPropertyNameByFieldName(variable);
@@ -64,18 +63,25 @@ namespace MinimalisticWPF.Generator
                     TypeSyntax propertyType = property.Type;
                     var prop = SyntaxFactory.PropertyDeclaration(propertyType, property.Identifier)
                         .WithModifiers(SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.PublicKeyword)));
-                    if (property.AccessorList?.Accessors.Any(a => a.Kind() == SyntaxKind.GetAccessorDeclaration) == true)
+
+                    if (property.AccessorList != null)
                     {
-                        prop = prop.AddAccessorListAccessors(
-                            SyntaxFactory.AccessorDeclaration(SyntaxKind.GetAccessorDeclaration)
-                                .WithSemicolonToken(SyntaxFactory.Token(SyntaxKind.SemicolonToken)));
+                        if (!property.AccessorList.Accessors.Any(a => a.Kind() == SyntaxKind.GetAccessorDeclaration) ||
+                            property.AccessorList.Accessors.Any(a => a.Kind() == SyntaxKind.GetAccessorDeclaration && a.Modifiers.All(m => m.IsKind(SyntaxKind.PublicKeyword))))
+                        {
+                            prop = prop.AddAccessorListAccessors(
+                                SyntaxFactory.AccessorDeclaration(SyntaxKind.GetAccessorDeclaration)
+                                    .WithSemicolonToken(SyntaxFactory.Token(SyntaxKind.SemicolonToken)));
+                        }
+
+                        if (property.AccessorList.Accessors.Any(a => a.Kind() == SyntaxKind.SetAccessorDeclaration && a.Modifiers.All(m => m.IsKind(SyntaxKind.PublicKeyword))))
+                        {
+                            prop = prop.AddAccessorListAccessors(
+                                SyntaxFactory.AccessorDeclaration(SyntaxKind.SetAccessorDeclaration)
+                                    .WithSemicolonToken(SyntaxFactory.Token(SyntaxKind.SemicolonToken)));
+                        }
                     }
-                    if (property.AccessorList?.Accessors.Any(a => a.Kind() == SyntaxKind.SetAccessorDeclaration) == true)
-                    {
-                        prop = prop.AddAccessorListAccessors(
-                            SyntaxFactory.AccessorDeclaration(SyntaxKind.SetAccessorDeclaration)
-                                .WithSemicolonToken(SyntaxFactory.Token(SyntaxKind.SemicolonToken)));
-                    }
+
                     interfaceDeclaration = interfaceDeclaration.AddMembers(prop);
                 }
 
