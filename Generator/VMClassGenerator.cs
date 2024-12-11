@@ -47,7 +47,7 @@ namespace MinimalisticWPF.Generator
                     sourceBuilder.GenerateNamespace(classSymbol);
                     sourceBuilder.GenerateVMClassPartialClass(classDeclaration, isAop, isVM);
                     sourceBuilder.AppendLine(conGen.Constructor);
-                    sourceBuilder.GenerateIPC();
+                    sourceBuilder.GenerateIPC(isVM);
                     sourceBuilder.AppendLine();
                     generatedSources[Tuple.Create(classSymbol, classDeclaration)] = sourceBuilder;
                 }

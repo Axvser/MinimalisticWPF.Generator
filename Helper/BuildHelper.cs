@@ -42,8 +42,9 @@ namespace MinimalisticWPF.Generator
                            """;
             sourceBuilder.AppendLine(source);
         }
-        internal static void GenerateIPC(this StringBuilder sourceBuilder)
+        internal static void GenerateIPC(this StringBuilder sourceBuilder, bool isVM)
         {
+            if (!isVM) return;
             string source = $$"""
                                     public event PropertyChangedEventHandler? PropertyChanged;
                                     public void OnPropertyChanged(string propertyName)
