@@ -26,11 +26,18 @@ namespace MinimalisticWPF.Generator
             sourceBuilder.AppendLine($"namespace {classSymbol.ContainingNamespace}");
             sourceBuilder.AppendLine("{");
         }
-        internal static void GenerateVMClassPartialClass(this StringBuilder sourceBuilder, ClassDeclarationSyntax cs, bool isAop)
+        internal static void GenerateVMClassPartialClass(this StringBuilder sourceBuilder, ClassDeclarationSyntax cs, bool isAop, bool isVM)
         {
-            var option = isAop ? $",{AnalizeHelper.GetInterfaceName(cs)}" : string.Empty;
+            string share = $"{cs.Modifiers} class {cs.Identifier.Text}";
+            string option = (isVM, isAop) switch
+            {
+                (true, true) => $" : INotifyPropertyChanged ,{AnalizeHelper.GetInterfaceName(cs)}",
+                (true, false) => $" : INotifyPropertyChanged",
+                (false, true) => $" : {AnalizeHelper.GetInterfaceName(cs)}",
+                _ => string.Empty
+            };
             var source = $$"""
-                              {{cs.Modifiers}} class {{cs.Identifier.Text}} : INotifyPropertyChanged {{option}}
+                              {{share}}{{option}}
                               {
                            """;
             sourceBuilder.AppendLine(source);
