@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
@@ -19,6 +18,7 @@ namespace MinimalisticWPF.Generator
             var compilationAndClasses = AnalizeHelper.GetValue(context, classDeclarations);
             context.RegisterSourceOutput(compilationAndClasses, GenerateSource);
         }
+
         private static void GenerateSource(SourceProductionContext context, (Compilation Compilation, ImmutableArray<ClassDeclarationSyntax> Classes) input)
         {
             foreach (var classDeclaration in input.Classes)
@@ -42,6 +42,8 @@ namespace MinimalisticWPF.Generator
                         var propertyName = AnalizeHelper.GetPropertyNameByFieldName(variable);
                         TypeSyntax propertyType = field.Declaration.Type;
 
+                        propertyType = GetFullyQualifiedType(input.Compilation, propertyType);
+
                         var propertyDeclaration = SyntaxFactory.PropertyDeclaration(propertyType, propertyName)
                             .WithModifiers(SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.PublicKeyword)))
                             .WithAccessorList(
@@ -49,9 +51,9 @@ namespace MinimalisticWPF.Generator
                                     SyntaxFactory.List(
                                     [
                                         SyntaxFactory.AccessorDeclaration(SyntaxKind.GetAccessorDeclaration)
-                                        .WithSemicolonToken(SyntaxFactory.Token(SyntaxKind.SemicolonToken)),
+                                            .WithSemicolonToken(SyntaxFactory.Token(SyntaxKind.SemicolonToken)),
                                         SyntaxFactory.AccessorDeclaration(SyntaxKind.SetAccessorDeclaration)
-                                        .WithSemicolonToken(SyntaxFactory.Token(SyntaxKind.SemicolonToken)),
+                                            .WithSemicolonToken(SyntaxFactory.Token(SyntaxKind.SemicolonToken)),
                                     ])));
 
                         interfaceDeclaration = interfaceDeclaration.AddMembers(propertyDeclaration);
@@ -61,6 +63,9 @@ namespace MinimalisticWPF.Generator
                 foreach (var property in classDeclaration.Members.OfType<PropertyDeclarationSyntax>().Where(p => p.Modifiers.Any(m => m.IsKind(SyntaxKind.PublicKeyword))))
                 {
                     TypeSyntax propertyType = property.Type;
+
+                    propertyType = GetFullyQualifiedType(input.Compilation, propertyType);
+
                     var prop = SyntaxFactory.PropertyDeclaration(propertyType, property.Identifier)
                         .WithModifiers(SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.PublicKeyword)));
 
@@ -89,6 +94,10 @@ namespace MinimalisticWPF.Generator
                 {
                     TypeSyntax returnType = method.ReturnType;
                     ParameterListSyntax parameterList = method.ParameterList;
+
+                    returnType = GetFullyQualifiedType(input.Compilation, returnType);
+                    parameterList = GetFullyQualifiedParameterList(input.Compilation, parameterList);
+
                     var methodSignature = SyntaxFactory.MethodDeclaration(returnType, method.Identifier)
                         .WithModifiers(SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.PublicKeyword)))
                         .WithParameterList(parameterList)
@@ -102,5 +111,33 @@ namespace MinimalisticWPF.Generator
                 context.AddSource($"{interfaceName}.g.cs", SourceText.From(generatedCode, Encoding.UTF8));
             }
         }
+
+        private static TypeSyntax GetFullyQualifiedType(Compilation compilation, TypeSyntax typeSyntax)
+        {
+            SemanticModel model = compilation.GetSemanticModel(typeSyntax.SyntaxTree);
+            var symbol = model.GetTypeInfo(typeSyntax).Type ?? model.GetDeclaredSymbol(typeSyntax);
+            if (symbol != null)
+            {
+                return SyntaxFactory.ParseTypeName(symbol.ToDisplayString());
+            }
+            return typeSyntax;
+        }
+
+        private static ParameterListSyntax GetFullyQualifiedParameterList(Compilation compilation, ParameterListSyntax parameterList)
+        {
+            List<ParameterSyntax> newParameters = new List<ParameterSyntax>();
+            foreach (var parameter in parameterList.Parameters)
+            {
+                if (parameter.Type == null) continue;
+
+                TypeSyntax fullyQualifiedType = GetFullyQualifiedType(compilation, parameter.Type);
+                ParameterSyntax newParameter = parameter.WithType(fullyQualifiedType);
+                newParameters.Add(newParameter);
+            }
+            return parameterList.WithParameters(SyntaxFactory.SeparatedList(newParameters));
+        }
     }
 }
+
+
+
