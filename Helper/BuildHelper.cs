@@ -68,7 +68,7 @@ namespace MinimalisticWPF.Generator
         internal static void GenerateITA(this StringBuilder sourceBuilder, Tuple<IEnumerable<IMethodSymbol>, IEnumerable<IMethodSymbol>> tuple)
         {
             sourceBuilder.AppendLine("      public Type? NowTheme { get; set; } = null;");
-            sourceBuilder.AppendLine("      public void BoforeThemeChanged()");
+            sourceBuilder.AppendLine("      public void BeforeThemeChanged()");
             sourceBuilder.AppendLine("      {");
             foreach (var before in tuple.Item1)
             {
