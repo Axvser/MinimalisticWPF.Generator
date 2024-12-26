@@ -42,12 +42,12 @@ namespace MinimalisticWPF.Generator
                 sb.AppendLine($"               var oldValue = {fieldName};");
                 sb.AppendLine($"               var eveArgs = new WatcherEventArgs(oldValue,value);");
             }
-            sb.AppendLine($"               {fieldName} = value ;");
+            sb.AppendLine($"               {fieldName} = value;");
             foreach (var methodSymbol in value.Item2)
             {
-                sb.AppendLine($"                {methodSymbol.Name}(eveArgs) ;");
+                sb.AppendLine($"               {methodSymbol.Name}(eveArgs);");
             }
-            sb.AppendLine($"                OnPropertyChanged(nameof({propertyName})) ;");
+            sb.AppendLine($"               OnPropertyChanged(nameof({propertyName}));");
             sb.AppendLine("            }");
             sb.AppendLine("         }");
             sb.AppendLine("      }");

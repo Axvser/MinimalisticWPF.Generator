@@ -9,7 +9,7 @@ namespace MinimalisticWPF.Generator
 {
     internal static class BuildHelper
     {
-        internal static void GenerateUsing(this StringBuilder sourceBuilder, bool isAop,bool isDyn)
+        internal static void GenerateUsing(this StringBuilder sourceBuilder, bool isAop, bool isDyn)
         {
             sourceBuilder.AppendLine("#nullable enable");
             sourceBuilder.AppendLine();
@@ -67,6 +67,7 @@ namespace MinimalisticWPF.Generator
         }
         internal static void GenerateITA(this StringBuilder sourceBuilder, Tuple<IEnumerable<IMethodSymbol>, IEnumerable<IMethodSymbol>> tuple)
         {
+            sourceBuilder.AppendLine("      public Type? NowTheme { get; set; } = null;");
             sourceBuilder.AppendLine("      public void BoforeThemeChanged()");
             sourceBuilder.AppendLine("      {");
             foreach (var before in tuple.Item1)
