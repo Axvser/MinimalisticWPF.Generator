@@ -21,10 +21,15 @@ namespace MinimalisticWPF.Generator
         private string GenerateVMProperty((IFieldSymbol, IEnumerable<IMethodSymbol>) value)
         {
             StringBuilder sb = new StringBuilder();
+            var atrrStrings = AnalizeHelper.GetThemeAttributesTexts(value.Item1);
 
             var typeName = value.Item1.Type;
             var fieldName = value.Item1.Name;
             var propertyName = char.ToUpper(fieldName[1]) + fieldName.Substring(2);
+            foreach (var attText in atrrStrings)
+            {
+                sb.AppendLine($"      {attText}");
+            }
             sb.AppendLine($"      public {typeName} {propertyName}");
             sb.AppendLine("      {");
             sb.AppendLine($"         get => {fieldName};");

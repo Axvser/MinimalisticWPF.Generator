@@ -2,11 +2,9 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.Text;
 
 namespace MinimalisticWPF.Generator
 {
@@ -31,7 +29,7 @@ namespace MinimalisticWPF.Generator
             }
             return false;
         }
-        internal static bool IsDynamicTheme(ClassDeclarationSyntax classDecl)
+        internal static bool IsDynamicTheme(ClassDeclarationSyntax classDecl, INamedTypeSymbol classSymbol, out Tuple<IEnumerable<IMethodSymbol>, IEnumerable<IMethodSymbol>> tuple)
         {
             var attributeLists = classDecl.AttributeLists;
             foreach (var attributeList in attributeLists)
@@ -40,10 +38,18 @@ namespace MinimalisticWPF.Generator
                 {
                     if (attribute.Name.ToString() == "Theme")
                     {
+                        var beforeThemeChanged = classSymbol.GetMembers()
+                            .OfType<IMethodSymbol>()
+                            .Where(method => method.GetAttributes().Any(attr => attr.AttributeClass?.Name == "BeforeThemeChangedAttribute"));
+                        var afterThemeChanged = classSymbol.GetMembers()
+                            .OfType<IMethodSymbol>()
+                            .Where(method => method.GetAttributes().Any(attr => attr.AttributeClass?.Name == "AfterThemeChangedAttribute"));
+                        tuple = Tuple.Create(beforeThemeChanged, afterThemeChanged);
                         return true;
                     }
                 }
             }
+            tuple = Tuple.Create<IEnumerable<IMethodSymbol>, IEnumerable<IMethodSymbol>>([], []);
             return false;
         }
         internal static bool IsVMFieldExist(INamedTypeSymbol classSymbol, out IEnumerable<IFieldSymbol> fieldSymbols)
@@ -54,6 +60,21 @@ namespace MinimalisticWPF.Generator
             return fieldSymbols.Any();
         }
 
+        internal static List<string> GetThemeAttributesTexts(IFieldSymbol fieldSymbol)
+        {
+            List<string> result = [];
+            foreach (var attribute in fieldSymbol.GetAttributes())
+            {
+                if (attribute.AttributeClass == null) continue;
+
+                if (attribute.AttributeClass.AllInterfaces.Any(i => i.Name == "IThemeAttribute"))
+                {
+                    var final = attribute.ApplicationSyntaxReference?.GetSyntax().ToFullString();
+                    result.Add(final == null ? string.Empty : $"[{final}]");
+                }
+            }
+            return result;
+        }
         internal static ClassDeclarationSyntax GetClassDeclaration(GeneratorSyntaxContext context)
         {
             var classDeclaration = (ClassDeclarationSyntax)context.Node;
@@ -77,7 +98,7 @@ namespace MinimalisticWPF.Generator
         internal static string GetNamespace(ClassDeclarationSyntax classDeclaration)
         {
             SyntaxNode? current = classDeclaration;
-            while (current != null && !(current is NamespaceDeclarationSyntax))
+            while (current != null && current is not NamespaceDeclarationSyntax)
             {
                 current = current.Parent;
             }
