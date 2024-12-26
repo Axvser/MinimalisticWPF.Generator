@@ -3,6 +3,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace MinimalisticWPF.Generator
@@ -33,21 +34,24 @@ namespace MinimalisticWPF.Generator
         internal static void GenerateVMClassPartialClass(this StringBuilder sourceBuilder, ClassDeclarationSyntax cs, bool isAop, bool isVM, bool isDy)
         {
             string share = $"{cs.Modifiers} class {cs.Identifier.Text}";
-            string option = (isVM, isAop, isDy) switch
+            var list = new List<string>();
+            if (isAop)
             {
-                (true, true, true) => $" : INotifyPropertyChanged ,{AnalizeHelper.GetInterfaceName(cs)} ,IThemeApplied",
-                (true, true, false) => $" : INotifyPropertyChanged ,{AnalizeHelper.GetInterfaceName(cs)}",
+                list.Add("INotifyPropertyChanged");
+            }
+            if (isVM)
+            {
+                list.Add(AnalizeHelper.GetInterfaceName(cs));
+            }
+            if (isDy)
+            {
+                list.Add("IThemeApplied");
+            }
+            var result = string.Join(", ", list);
 
-                (true, false, true) => $" : INotifyPropertyChanged ,IThemeApplied",
-                (true, false, false) => $" : INotifyPropertyChanged",
 
-                (false, true, true) => $" : {AnalizeHelper.GetInterfaceName(cs)} ,IThemeApplied",
-                (false, true, false) => $" : {AnalizeHelper.GetInterfaceName(cs)}",
-
-                _ => string.Empty
-            };
             var source = $$"""
-                              {{share}}{{option}}
+                              {{share}} : {{result}}
                               {
                            """;
             sourceBuilder.AppendLine(source);
