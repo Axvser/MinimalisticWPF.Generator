@@ -37,24 +37,33 @@ namespace MinimalisticWPF.Generator
             var list = new List<string>();
             if (isAop)
             {
-                list.Add("INotifyPropertyChanged");
+                list.Add(AnalizeHelper.GetInterfaceName(cs));
             }
             if (isVM)
             {
-                list.Add(AnalizeHelper.GetInterfaceName(cs));
+                list.Add("INotifyPropertyChanged");
             }
             if (isDy)
             {
                 list.Add("IThemeApplied");
             }
-            var result = string.Join(", ", list);
-
-
-            var source = $$"""
+            if (list.Count > 0)
+            {
+                var result = string.Join(", ", list);
+                var source = $$"""
                               {{share}} : {{result}}
                               {
                            """;
-            sourceBuilder.AppendLine(source);
+                sourceBuilder.AppendLine(source);
+            }
+            else
+            {
+                var source = $$"""
+                              {{share}}
+                              {
+                           """;
+                sourceBuilder.AppendLine(source);
+            }
         }
         internal static void GenerateIPC(this StringBuilder sourceBuilder, bool isVM)
         {
@@ -67,7 +76,6 @@ namespace MinimalisticWPF.Generator
                                     }
                               """;
             sourceBuilder.AppendLine(source);
-            sourceBuilder.AppendLine(string.Empty);
         }
         internal static void GenerateITA(this StringBuilder sourceBuilder, Tuple<IEnumerable<IMethodSymbol>, IEnumerable<IMethodSymbol>> tuple)
         {
