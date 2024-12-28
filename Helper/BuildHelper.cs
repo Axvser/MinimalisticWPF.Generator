@@ -79,8 +79,9 @@ namespace MinimalisticWPF.Generator
         }
         internal static void GenerateITA(this StringBuilder sourceBuilder, Tuple<IEnumerable<IMethodSymbol>, IEnumerable<IMethodSymbol>> tuple)
         {
-            sourceBuilder.AppendLine("      public Type? NowTheme { get; set; } = null;");
-            sourceBuilder.AppendLine("      public void BeforeThemeChanged()");
+            sourceBuilder.AppendLine("      public virtual bool IsThemeChanging { get; set; } = false;");
+            sourceBuilder.AppendLine("      public virtual Type? NowTheme { get; set; } = null;");
+            sourceBuilder.AppendLine("      public virtual void BeforeThemeChanged()");
             sourceBuilder.AppendLine("      {");
             foreach (var before in tuple.Item1)
             {
@@ -88,7 +89,7 @@ namespace MinimalisticWPF.Generator
             }
             sourceBuilder.AppendLine("      }");
             sourceBuilder.Append(string.Empty);
-            sourceBuilder.AppendLine("      public void AfterThemeChanged()");
+            sourceBuilder.AppendLine("      public virtual void AfterThemeChanged()");
             sourceBuilder.AppendLine("      {");
             foreach (var after in tuple.Item2)
             {

@@ -30,7 +30,7 @@ namespace MinimalisticWPF.Generator
             {
                 sb.AppendLine($"      {attText}");
             }
-            sb.AppendLine($"      public {typeName} {propertyName}");
+            sb.AppendLine($"      public virtual {typeName} {propertyName}");
             sb.AppendLine("      {");
             sb.AppendLine($"         get => {fieldName};");
             sb.AppendLine("         set");
