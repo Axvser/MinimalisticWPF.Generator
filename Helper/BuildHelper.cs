@@ -70,7 +70,7 @@ namespace MinimalisticWPF.Generator
             if (!isVM) return;
             string source = $$"""
                                     public event PropertyChangedEventHandler? PropertyChanged;
-                                    public void OnPropertyChanged(string propertyName)
+                                    public virtual void OnPropertyChanged(string propertyName)
                                     {
                                        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
                                     }
