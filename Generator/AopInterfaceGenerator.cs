@@ -18,7 +18,6 @@ namespace MinimalisticWPF.Generator
             var compilationAndClasses = AnalizeHelper.GetValue(context, classDeclarations);
             context.RegisterSourceOutput(compilationAndClasses, GenerateSource);
         }
-
         private static void GenerateSource(SourceProductionContext context, (Compilation Compilation, ImmutableArray<ClassDeclarationSyntax> Classes) input)
         {
             foreach (var classDeclaration in input.Classes)
@@ -111,7 +110,6 @@ namespace MinimalisticWPF.Generator
                 context.AddSource($"{interfaceName}.g.cs", SourceText.From(generatedCode, Encoding.UTF8));
             }
         }
-
         private static TypeSyntax GetFullyQualifiedType(Compilation compilation, TypeSyntax typeSyntax)
         {
             SemanticModel model = compilation.GetSemanticModel(typeSyntax.SyntaxTree);
@@ -122,7 +120,6 @@ namespace MinimalisticWPF.Generator
             }
             return typeSyntax;
         }
-
         private static ParameterListSyntax GetFullyQualifiedParameterList(Compilation compilation, ParameterListSyntax parameterList)
         {
             List<ParameterSyntax> newParameters = new List<ParameterSyntax>();

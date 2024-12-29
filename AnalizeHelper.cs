@@ -29,52 +29,29 @@ namespace MinimalisticWPF.Generator
             }
             return false;
         }
-        internal static bool IsDynamicTheme(ClassDeclarationSyntax classDecl, INamedTypeSymbol classSymbol, out Tuple<IEnumerable<IMethodSymbol>, IEnumerable<IMethodSymbol>> tuple)
+        internal static bool IsDynamicTheme(ClassDeclarationSyntax classDecl)
         {
             var attributeLists = classDecl.AttributeLists;
             foreach (var attributeList in attributeLists)
             {
                 foreach (var attribute in attributeList.Attributes)
                 {
-                    if (attribute.Name.ToString() == "Theme")
+                    if (attribute.Name.ToString() == "DynamicTheme")
                     {
-                        var beforeThemeChanged = classSymbol.GetMembers()
-                            .OfType<IMethodSymbol>()
-                            .Where(method => method.GetAttributes().Any(attr => attr.AttributeClass?.Name == "BeforeThemeChangedAttribute"));
-                        var afterThemeChanged = classSymbol.GetMembers()
-                            .OfType<IMethodSymbol>()
-                            .Where(method => method.GetAttributes().Any(attr => attr.AttributeClass?.Name == "AfterThemeChangedAttribute"));
-                        tuple = Tuple.Create(beforeThemeChanged, afterThemeChanged);
                         return true;
                     }
                 }
             }
-            tuple = Tuple.Create<IEnumerable<IMethodSymbol>, IEnumerable<IMethodSymbol>>([], []);
             return false;
         }
         internal static bool IsVMFieldExist(INamedTypeSymbol classSymbol, out IEnumerable<IFieldSymbol> fieldSymbols)
         {
             fieldSymbols = classSymbol.GetMembers()
                     .OfType<IFieldSymbol>()
-                    .Where(field => field.GetAttributes().Any(attr => attr.AttributeClass?.Name == "VMPropertyAttribute"));
+                    .Where(field => field.GetAttributes().Any(attr => attr.AttributeClass?.Name == "ObservableAttribute"));
             return fieldSymbols.Any();
         }
 
-        internal static List<string> GetThemeAttributesTexts(IFieldSymbol fieldSymbol)
-        {
-            List<string> result = [];
-            foreach (var attribute in fieldSymbol.GetAttributes())
-            {
-                if (attribute.AttributeClass == null) continue;
-
-                if (attribute.AttributeClass.AllInterfaces.Any(i => i.Name == "IThemeAttribute"))
-                {
-                    var final = attribute.ApplicationSyntaxReference?.GetSyntax().ToFullString();
-                    result.Add(final == null ? string.Empty : $"[{final}]");
-                }
-            }
-            return result;
-        }
         internal static ClassDeclarationSyntax GetClassDeclaration(GeneratorSyntaxContext context)
         {
             var classDeclaration = (ClassDeclarationSyntax)context.Node;
