@@ -159,7 +159,7 @@ namespace MinimalisticWPF.Generator
             StringBuilder sourceBuilder = new();
             string source = $$"""
                                     public event PropertyChangedEventHandler? PropertyChanged;
-                                    public virtual void OnPropertyChanged(string propertyName)
+                                    public void OnPropertyChanged(string propertyName)
                                     {
                                        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
                                     }
