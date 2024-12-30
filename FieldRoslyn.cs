@@ -59,7 +59,8 @@ namespace MinimalisticWPF.Generator
             SetterValidation = (int)attributeData.ConstructorArguments[0].Value!;
             CanOverride = (bool)attributeData.ConstructorArguments[1].Value!;
             CanHover = (bool)attributeData.ConstructorArguments[2].Value!;
-            Cascades = attributeData.ConstructorArguments[3].Values.Select(v => v.ToString())!;
+            Cascades = attributeData.ConstructorArguments[3].Values
+                .Select(v => (string)v.Value!);
         }
         private static string ParseCascadeName(string value)
         {
