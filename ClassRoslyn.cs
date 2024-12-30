@@ -177,6 +177,84 @@ namespace MinimalisticWPF.Generator
             sourceBuilder.AppendLine("      public partial void OnThemeChanged(Type? oldTheme, Type newTheme);");
             return sourceBuilder.ToString();
         }
+        public string GenerateHoverControl()
+        {
+            var hoverables = FieldRoslyns.Where(fr => fr.CanHover);
+            StringBuilder sourceBuilder = new();
+
+            foreach (var fieldRoslyn in hoverables)
+            {
+                if (IsDynamicTheme)
+                {
+                    foreach (var themeText in fieldRoslyn.ThemeAttributes)
+                    {
+                        sourceBuilder.AppendLine($"      private {fieldRoslyn.TypeName} _{themeText}Hovered{fieldRoslyn.PropertyName};");
+                        sourceBuilder.AppendLine($"      public {fieldRoslyn.TypeName} {themeText}Hovered{fieldRoslyn.PropertyName}");
+                        sourceBuilder.AppendLine("      {");
+                        sourceBuilder.AppendLine($"         get => _{themeText}Hovered{fieldRoslyn.PropertyName};");
+                        sourceBuilder.AppendLine("         set");
+                        sourceBuilder.AppendLine("         {");
+                        sourceBuilder.AppendLine($"            var oldValue = _{themeText}Hovered{fieldRoslyn.PropertyName};");
+                        sourceBuilder.AppendLine($"            On{themeText}Hovered{fieldRoslyn.PropertyName}Changing(oldValue,value);");
+                        sourceBuilder.AppendLine($"            _{themeText}Hovered{fieldRoslyn.PropertyName} = value;");
+                        sourceBuilder.AppendLine($"            On{themeText}Hovered{fieldRoslyn.PropertyName}Changed(oldValue,value);");
+                        sourceBuilder.AppendLine("         }");
+                        sourceBuilder.AppendLine("      }");
+                        sourceBuilder.AppendLine($"      partial void On{themeText}Hovered{fieldRoslyn.PropertyName}Changing({fieldRoslyn.TypeName} oldValue,{fieldRoslyn.TypeName} newValue)");
+                        sourceBuilder.AppendLine($"      partial void On{themeText}Hovered{fieldRoslyn.PropertyName}Changed({fieldRoslyn.TypeName} oldValue,{fieldRoslyn.TypeName} newValue)");
+
+                        sourceBuilder.AppendLine($"      private {fieldRoslyn.TypeName} _{themeText}NoHovered{fieldRoslyn.PropertyName};");
+                        sourceBuilder.AppendLine($"      public {fieldRoslyn.TypeName} {themeText}NoHovered{fieldRoslyn.PropertyName}");
+                        sourceBuilder.AppendLine("      {");
+                        sourceBuilder.AppendLine($"         get => _{themeText}NoHovered{fieldRoslyn.PropertyName};");
+                        sourceBuilder.AppendLine("         set");
+                        sourceBuilder.AppendLine("         {");
+                        sourceBuilder.AppendLine($"            var oldValue = _{themeText}NoHovered{fieldRoslyn.PropertyName};");
+                        sourceBuilder.AppendLine($"            On{themeText}NoHovered{fieldRoslyn.PropertyName}Changing(oldValue,value);");
+                        sourceBuilder.AppendLine($"            _{themeText}NoHovered{fieldRoslyn.PropertyName} = value;");
+                        sourceBuilder.AppendLine($"            On{themeText}NoHovered{fieldRoslyn.PropertyName}Changed(oldValue,value);");
+                        sourceBuilder.AppendLine("         }");
+                        sourceBuilder.AppendLine("      }");
+                        sourceBuilder.AppendLine($"      partial void On{themeText}NoHovered{fieldRoslyn.PropertyName}Changing({fieldRoslyn.TypeName} oldValue,{fieldRoslyn.TypeName} newValue)");
+                        sourceBuilder.AppendLine($"      partial void On{themeText}NoHovered{fieldRoslyn.PropertyName}Changed({fieldRoslyn.TypeName} oldValue,{fieldRoslyn.TypeName} newValue)");
+                    }
+                }
+                else
+                {
+                    sourceBuilder.AppendLine($"      private {fieldRoslyn.TypeName} _Hovered{fieldRoslyn.PropertyName};");
+                    sourceBuilder.AppendLine($"      public {fieldRoslyn.TypeName} Hovered{fieldRoslyn.PropertyName}");
+                    sourceBuilder.AppendLine("      {");
+                    sourceBuilder.AppendLine($"         get => _Hovered{fieldRoslyn.PropertyName};");
+                    sourceBuilder.AppendLine("         set");
+                    sourceBuilder.AppendLine("         {");
+                    sourceBuilder.AppendLine($"            var oldValue = _Hovered{fieldRoslyn.PropertyName};");
+                    sourceBuilder.AppendLine($"            OnHovered{fieldRoslyn.PropertyName}Changing(oldValue,value);");
+                    sourceBuilder.AppendLine($"            _Hovered{fieldRoslyn.PropertyName} = value;");
+                    sourceBuilder.AppendLine($"            OnHovered{fieldRoslyn.PropertyName}Changed(oldValue,value);");
+                    sourceBuilder.AppendLine("         }");
+                    sourceBuilder.AppendLine("      }");
+                    sourceBuilder.AppendLine($"      partial void OnHovered{fieldRoslyn.PropertyName}Changing({fieldRoslyn.TypeName} oldValue,{fieldRoslyn.TypeName} newValue)");
+                    sourceBuilder.AppendLine($"      partial void OnHovered{fieldRoslyn.PropertyName}Changed({fieldRoslyn.TypeName} oldValue,{fieldRoslyn.TypeName} newValue)");
+
+                    sourceBuilder.AppendLine($"      private {fieldRoslyn.TypeName} _NoHovered{fieldRoslyn.PropertyName};");
+                    sourceBuilder.AppendLine($"      public {fieldRoslyn.TypeName} NoHovered{fieldRoslyn.PropertyName}");
+                    sourceBuilder.AppendLine("      {");
+                    sourceBuilder.AppendLine($"         get => _NoHovered{fieldRoslyn.PropertyName};");
+                    sourceBuilder.AppendLine("         set");
+                    sourceBuilder.AppendLine("         {");
+                    sourceBuilder.AppendLine($"            var oldValue = _NoHovered{fieldRoslyn.PropertyName};");
+                    sourceBuilder.AppendLine($"            OnNoHovered{fieldRoslyn.PropertyName}Changing(oldValue,value);");
+                    sourceBuilder.AppendLine($"            _NoHovered{fieldRoslyn.PropertyName} = value;");
+                    sourceBuilder.AppendLine($"            OnNoHovered{fieldRoslyn.PropertyName}Changed(oldValue,value);");
+                    sourceBuilder.AppendLine("         }");
+                    sourceBuilder.AppendLine("      }");
+                    sourceBuilder.AppendLine($"      partial void OnNoHovered{fieldRoslyn.PropertyName}Changing({fieldRoslyn.TypeName} oldValue,{fieldRoslyn.TypeName} newValue)");
+                    sourceBuilder.AppendLine($"      partial void OnNoHovered{fieldRoslyn.PropertyName}Changed({fieldRoslyn.TypeName} oldValue,{fieldRoslyn.TypeName} newValue)");
+                }
+            }
+
+            return sourceBuilder.ToString();
+        }
         public string GenerateEnd()
         {
             StringBuilder sourceBuilder = new();

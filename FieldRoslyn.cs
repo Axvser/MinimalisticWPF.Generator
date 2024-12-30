@@ -14,7 +14,7 @@ namespace MinimalisticWPF.Generator
             FieldName = fieldSymbol.Name;
             PropertyName = GetPropertyNameFromFieldName(fieldSymbol.Name);
             ThemeAttributes = GetThemeAttributesTexts(fieldSymbol);
-            SetterValidation = GetSetterValidateType(fieldSymbol);
+            ReadObservableParams(fieldSymbol);
         }
 
         public string TypeName { get; private set; } = string.Empty;
@@ -22,6 +22,9 @@ namespace MinimalisticWPF.Generator
         public string PropertyName { get; private set; } = string.Empty;
         public List<string> ThemeAttributes { get; private set; } = [];
         public int SetterValidation { get; private set; } = 0;
+        public bool CanOverride { get; private set; } = false;
+        public bool CanHover { get; private set; } = false;
+        public string[] Cascades { get; private set; } = [];
 
         private static string GetPropertyNameFromFieldName(string fieldName)
         {
@@ -49,16 +52,25 @@ namespace MinimalisticWPF.Generator
             }
             return result;
         }
-        private static int GetSetterValidateType(IFieldSymbol fieldSymbol)
+        private void ReadObservableParams(IFieldSymbol fieldSymbol)
         {
             AttributeData attributeData = fieldSymbol.GetAttributes()
                 .First(ad => ad.AttributeClass?.Name == "ObservableAttribute");
-
-            if (attributeData.ConstructorArguments.Length > 0)
+            SetterValidation = (int)attributeData.ConstructorArguments[0].Value!;
+            CanOverride = (bool)attributeData.ConstructorArguments[1].Value!;
+            CanHover = (bool)attributeData.ConstructorArguments[2].Value!;
+            Cascades = (string[])attributeData.ConstructorArguments[3].Value!;
+        }
+        private static string ParseCascadeName(string value)
+        {
+            if (char.IsUpper(value[0]))
             {
-                return (int)attributeData.ConstructorArguments[0].Value!;
+                return value;
             }
-            return 0;
+            else
+            {
+                return GetPropertyNameFromFieldName(value);
+            }
         }
 
         public string GenerateCode()
@@ -69,7 +81,14 @@ namespace MinimalisticWPF.Generator
             {
                 sb.AppendLine($"      {attributeText}");
             }
-            sb.AppendLine($"      public {TypeName} {PropertyName}");
+            if (CanOverride)
+            {
+                sb.AppendLine($"      public virtual {TypeName} {PropertyName}");
+            }
+            else
+            {
+                sb.AppendLine($"      public {TypeName} {PropertyName}");
+            }
             sb.AppendLine("      {");
             sb.AppendLine($"         get => {FieldName};");
             sb.AppendLine("         set");
@@ -88,6 +107,10 @@ namespace MinimalisticWPF.Generator
             }
             sb.AppendLine($"               On{PropertyName}Changing(oldValue,value);");
             sb.AppendLine($"               {FieldName} = value;");
+            foreach (var cascade in Cascades.Select(c => ParseCascadeName(c)))
+            {
+                sb.AppendLine($"               {cascade} = value;");
+            }
             sb.AppendLine($"               On{PropertyName}Changed(oldValue,value);");
             sb.AppendLine($"               OnPropertyChanged(nameof({PropertyName}));");
             if (SetterValidation == 1 || SetterValidation == 2)
