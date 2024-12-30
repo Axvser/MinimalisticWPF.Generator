@@ -23,9 +23,26 @@ namespace MinimalisticWPF.Generator
         {
             var (compilation, classes) = input;
 
-            Dictionary<Tuple<INamedTypeSymbol, ClassDeclarationSyntax>, StringBuilder> generatedSources = [];
+            HashSet<INamedTypeSymbol> processedSymbols = [];
+            List<ClassDeclarationSyntax> uniqueClasses = [];
 
             foreach (var classDeclaration in classes)
+            {
+                SemanticModel model = compilation.GetSemanticModel(classDeclaration.SyntaxTree);
+                var classSymbol = model.GetDeclaredSymbol(classDeclaration);
+                if (classSymbol == null)
+                    continue;
+
+                if (!processedSymbols.Contains(classSymbol))
+                {
+                    processedSymbols.Add(classSymbol);
+                    uniqueClasses.Add(classDeclaration);
+                }
+            }
+
+            Dictionary<Tuple<INamedTypeSymbol, ClassDeclarationSyntax>, StringBuilder> generatedSources = [];
+
+            foreach (var classDeclaration in uniqueClasses)
             {
                 SemanticModel model = compilation.GetSemanticModel(classDeclaration.SyntaxTree);
                 var classSymbol = model.GetDeclaredSymbol(classDeclaration);
@@ -55,6 +72,7 @@ namespace MinimalisticWPF.Generator
                     generatedSources[Tuple.Create(classSymbol, classDeclaration)] = sourceBuilder;
                 }
             }
+
             foreach (var kvp in generatedSources)
             {
                 context.AddSource($"{kvp.Key.Item1.ContainingNamespace.ToString().Replace('.', '_')}_{kvp.Key.Item2.Identifier.Text}_VMClass.g.cs", SourceText.From(kvp.Value.ToString(), Encoding.UTF8));

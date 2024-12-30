@@ -184,7 +184,7 @@ namespace MinimalisticWPF.Generator
 
             foreach (var fieldRoslyn in hoverables)
             {
-                if (IsDynamicTheme)
+                if (IsDynamicTheme && fieldRoslyn.ThemeAttributes.Count > 0)
                 {
                     foreach (var themeText in fieldRoslyn.ThemeAttributes.Select(t => t.Split('(')[0]))
                     {
