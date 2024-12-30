@@ -13,7 +13,6 @@ namespace MinimalisticWPF.Generator
     [Generator]
     public class VMClassGenerator : IIncrementalGenerator
     {
-        private static int FileId { get; set; } = 0;
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
             var classDeclarations = AnalizeHelper.DefiningFilter(context);
@@ -47,19 +46,18 @@ namespace MinimalisticWPF.Generator
                     sourceBuilder.AppendLine(classRoslyn.GenerateConstructor());
                     sourceBuilder.AppendLine(classRoslyn.GenerateIPC());
                     sourceBuilder.AppendLine(classRoslyn.GenerateITA());
-                    sourceBuilder.AppendLine(classRoslyn.GenerateHoverControl());
                     foreach (var fieldRoslyn in classRoslyn.FieldRoslyns)
                     {
                         sourceBuilder.AppendLine(fieldRoslyn.GenerateCode());
                     }
+                    sourceBuilder.AppendLine(classRoslyn.GenerateHoverControl());
                     sourceBuilder.AppendLine(classRoslyn.GenerateEnd());
                     generatedSources[Tuple.Create(classSymbol, classDeclaration)] = sourceBuilder;
                 }
             }
             foreach (var kvp in generatedSources)
             {
-                context.AddSource($"[{FileId}]{kvp.Key.Item1.ContainingNamespace.ToString().Replace('.', '_')}_{kvp.Key.Item2.Identifier.Text}_VMClass.g.cs", SourceText.From(kvp.Value.ToString(), Encoding.UTF8));
-                FileId++;
+                context.AddSource($"{kvp.Key.Item1.ContainingNamespace.ToString().Replace('.', '_')}_{kvp.Key.Item2.Identifier.Text}_VMClass.g.cs", SourceText.From(kvp.Value.ToString(), Encoding.UTF8));
             }
         }
     }

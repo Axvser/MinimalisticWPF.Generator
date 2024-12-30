@@ -24,7 +24,7 @@ namespace MinimalisticWPF.Generator
         public int SetterValidation { get; private set; } = 0;
         public bool CanOverride { get; private set; } = false;
         public bool CanHover { get; private set; } = false;
-        public string[] Cascades { get; private set; } = [];
+        public IEnumerable<string> Cascades { get; private set; } = [];
 
         private static string GetPropertyNameFromFieldName(string fieldName)
         {
@@ -47,7 +47,7 @@ namespace MinimalisticWPF.Generator
                 if (attribute.AttributeClass.AllInterfaces.Any(i => i.Name == "IThemeAttribute"))
                 {
                     var final = attribute.ApplicationSyntaxReference?.GetSyntax().ToFullString();
-                    result.Add(final == null ? string.Empty : $"[{final}]");
+                    result.Add(final ?? string.Empty);
                 }
             }
             return result;
@@ -59,7 +59,7 @@ namespace MinimalisticWPF.Generator
             SetterValidation = (int)attributeData.ConstructorArguments[0].Value!;
             CanOverride = (bool)attributeData.ConstructorArguments[1].Value!;
             CanHover = (bool)attributeData.ConstructorArguments[2].Value!;
-            Cascades = (string[])attributeData.ConstructorArguments[3].Value!;
+            Cascades = attributeData.ConstructorArguments[3].Values.Select(v => v.ToString())!;
         }
         private static string ParseCascadeName(string value)
         {
@@ -79,7 +79,7 @@ namespace MinimalisticWPF.Generator
 
             foreach (var attributeText in ThemeAttributes)
             {
-                sb.AppendLine($"      {attributeText}");
+                sb.AppendLine($"      [{attributeText}]");
             }
             if (CanOverride)
             {

@@ -186,7 +186,7 @@ namespace MinimalisticWPF.Generator
             {
                 if (IsDynamicTheme)
                 {
-                    foreach (var themeText in fieldRoslyn.ThemeAttributes)
+                    foreach (var themeText in fieldRoslyn.ThemeAttributes.Select(t => t.Split('(')[0]))
                     {
                         sourceBuilder.AppendLine($"      private {fieldRoslyn.TypeName} _{themeText}Hovered{fieldRoslyn.PropertyName};");
                         sourceBuilder.AppendLine($"      public {fieldRoslyn.TypeName} {themeText}Hovered{fieldRoslyn.PropertyName}");
@@ -200,8 +200,9 @@ namespace MinimalisticWPF.Generator
                         sourceBuilder.AppendLine($"            On{themeText}Hovered{fieldRoslyn.PropertyName}Changed(oldValue,value);");
                         sourceBuilder.AppendLine("         }");
                         sourceBuilder.AppendLine("      }");
-                        sourceBuilder.AppendLine($"      partial void On{themeText}Hovered{fieldRoslyn.PropertyName}Changing({fieldRoslyn.TypeName} oldValue,{fieldRoslyn.TypeName} newValue)");
-                        sourceBuilder.AppendLine($"      partial void On{themeText}Hovered{fieldRoslyn.PropertyName}Changed({fieldRoslyn.TypeName} oldValue,{fieldRoslyn.TypeName} newValue)");
+                        sourceBuilder.AppendLine($"      partial void On{themeText}Hovered{fieldRoslyn.PropertyName}Changing({fieldRoslyn.TypeName} oldValue,{fieldRoslyn.TypeName} newValue);");
+                        sourceBuilder.AppendLine($"      partial void On{themeText}Hovered{fieldRoslyn.PropertyName}Changed({fieldRoslyn.TypeName} oldValue,{fieldRoslyn.TypeName} newValue);");
+                        sourceBuilder.AppendLine();
 
                         sourceBuilder.AppendLine($"      private {fieldRoslyn.TypeName} _{themeText}NoHovered{fieldRoslyn.PropertyName};");
                         sourceBuilder.AppendLine($"      public {fieldRoslyn.TypeName} {themeText}NoHovered{fieldRoslyn.PropertyName}");
@@ -215,8 +216,9 @@ namespace MinimalisticWPF.Generator
                         sourceBuilder.AppendLine($"            On{themeText}NoHovered{fieldRoslyn.PropertyName}Changed(oldValue,value);");
                         sourceBuilder.AppendLine("         }");
                         sourceBuilder.AppendLine("      }");
-                        sourceBuilder.AppendLine($"      partial void On{themeText}NoHovered{fieldRoslyn.PropertyName}Changing({fieldRoslyn.TypeName} oldValue,{fieldRoslyn.TypeName} newValue)");
-                        sourceBuilder.AppendLine($"      partial void On{themeText}NoHovered{fieldRoslyn.PropertyName}Changed({fieldRoslyn.TypeName} oldValue,{fieldRoslyn.TypeName} newValue)");
+                        sourceBuilder.AppendLine($"      partial void On{themeText}NoHovered{fieldRoslyn.PropertyName}Changing({fieldRoslyn.TypeName} oldValue,{fieldRoslyn.TypeName} newValue);");
+                        sourceBuilder.AppendLine($"      partial void On{themeText}NoHovered{fieldRoslyn.PropertyName}Changed({fieldRoslyn.TypeName} oldValue,{fieldRoslyn.TypeName} newValue);");
+                        sourceBuilder.AppendLine();
                     }
                 }
                 else
@@ -233,8 +235,9 @@ namespace MinimalisticWPF.Generator
                     sourceBuilder.AppendLine($"            OnHovered{fieldRoslyn.PropertyName}Changed(oldValue,value);");
                     sourceBuilder.AppendLine("         }");
                     sourceBuilder.AppendLine("      }");
-                    sourceBuilder.AppendLine($"      partial void OnHovered{fieldRoslyn.PropertyName}Changing({fieldRoslyn.TypeName} oldValue,{fieldRoslyn.TypeName} newValue)");
-                    sourceBuilder.AppendLine($"      partial void OnHovered{fieldRoslyn.PropertyName}Changed({fieldRoslyn.TypeName} oldValue,{fieldRoslyn.TypeName} newValue)");
+                    sourceBuilder.AppendLine($"      partial void OnHovered{fieldRoslyn.PropertyName}Changing({fieldRoslyn.TypeName} oldValue,{fieldRoslyn.TypeName} newValue);");
+                    sourceBuilder.AppendLine($"      partial void OnHovered{fieldRoslyn.PropertyName}Changed({fieldRoslyn.TypeName} oldValue,{fieldRoslyn.TypeName} newValue);");
+                    sourceBuilder.AppendLine();
 
                     sourceBuilder.AppendLine($"      private {fieldRoslyn.TypeName} _NoHovered{fieldRoslyn.PropertyName};");
                     sourceBuilder.AppendLine($"      public {fieldRoslyn.TypeName} NoHovered{fieldRoslyn.PropertyName}");
@@ -248,8 +251,9 @@ namespace MinimalisticWPF.Generator
                     sourceBuilder.AppendLine($"            OnNoHovered{fieldRoslyn.PropertyName}Changed(oldValue,value);");
                     sourceBuilder.AppendLine("         }");
                     sourceBuilder.AppendLine("      }");
-                    sourceBuilder.AppendLine($"      partial void OnNoHovered{fieldRoslyn.PropertyName}Changing({fieldRoslyn.TypeName} oldValue,{fieldRoslyn.TypeName} newValue)");
-                    sourceBuilder.AppendLine($"      partial void OnNoHovered{fieldRoslyn.PropertyName}Changed({fieldRoslyn.TypeName} oldValue,{fieldRoslyn.TypeName} newValue)");
+                    sourceBuilder.AppendLine($"      partial void OnNoHovered{fieldRoslyn.PropertyName}Changing({fieldRoslyn.TypeName} oldValue,{fieldRoslyn.TypeName} newValue);");
+                    sourceBuilder.AppendLine($"      partial void OnNoHovered{fieldRoslyn.PropertyName}Changed({fieldRoslyn.TypeName} oldValue,{fieldRoslyn.TypeName} newValue);");
+                    sourceBuilder.AppendLine();
                 }
             }
 
