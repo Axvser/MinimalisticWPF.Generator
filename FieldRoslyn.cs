@@ -1,4 +1,5 @@
 ﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,13 +11,16 @@ namespace MinimalisticWPF.Generator
     {
         internal FieldRoslyn(IFieldSymbol fieldSymbol)
         {
+            Symbol = fieldSymbol;
             TypeName = fieldSymbol.Type.ToString();
             FieldName = fieldSymbol.Name;
             PropertyName = GetPropertyNameFromFieldName(fieldSymbol.Name);
             ThemeAttributes = GetThemeAttributesTexts(fieldSymbol);
+            Initial = GetInitializerText(fieldSymbol);
             ReadObservableParams(fieldSymbol);
         }
 
+        public IFieldSymbol Symbol { get; private set; }
         public string TypeName { get; private set; } = string.Empty;
         public string FieldName { get; private set; } = string.Empty;
         public string PropertyName { get; private set; } = string.Empty;
@@ -25,6 +29,7 @@ namespace MinimalisticWPF.Generator
         public bool CanOverride { get; private set; } = false;
         public bool CanHover { get; private set; } = false;
         public IEnumerable<string> Cascades { get; private set; } = [];
+        public string Initial { get; private set; } = string.Empty;
 
         private static string GetPropertyNameFromFieldName(string fieldName)
         {
@@ -72,6 +77,36 @@ namespace MinimalisticWPF.Generator
             {
                 return GetPropertyNameFromFieldName(value);
             }
+        }
+        private static string GetInitializerText(IFieldSymbol fieldSymbol)
+        {
+            if (fieldSymbol == null)
+            {
+                return string.Empty;
+            }
+
+            SyntaxReference? syntaxRef = fieldSymbol.DeclaringSyntaxReferences.FirstOrDefault();
+            if (syntaxRef == null)
+            {
+                return string.Empty;
+            }
+            VariableDeclaratorSyntax? variableDeclarator = syntaxRef.GetSyntax() as VariableDeclaratorSyntax;
+            if (variableDeclarator == null)
+            {
+                return string.Empty;
+            }
+            EqualsValueClauseSyntax? initializer = variableDeclarator.Initializer;
+            if (initializer == null)
+            {
+                return string.Empty;
+            }
+            ExpressionSyntax expression = initializer.Value;
+            if (expression == null)
+            {
+                return string.Empty;
+            }
+
+            return $" = {expression}";
         }
 
         public string GenerateCode()

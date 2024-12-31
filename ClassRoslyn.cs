@@ -13,9 +13,13 @@ namespace MinimalisticWPF.Generator
         {
             Syntax = classDeclarationSyntax;
             Symbol = namedTypeSymbol;
+            IsDynamicTheme = namedTypeSymbol
+                .GetMembers()
+                .Any(member => member.GetAttributes()
+                .Any(att => att.AttributeClass?.AllInterfaces.Any(i => i.Name == "IThemeAttribute") ?? false));
             IsAop = AnalizeHelper.IsAopClass(classDeclarationSyntax);
-            IsDynamicTheme = AnalizeHelper.IsDynamicTheme(classDeclarationSyntax);
-            IsViewModel = AnalizeHelper.IsVMFieldExist(namedTypeSymbol, out var vmfields);
+            IsControl = FindControlBase(namedTypeSymbol);
+            IsViewModel = IsObservableFieldExist(namedTypeSymbol, out var vmfields);
             if (vmfields != null)
             {
                 FieldRoslyns = vmfields.Select(field => new FieldRoslyn(field));
@@ -27,23 +31,98 @@ namespace MinimalisticWPF.Generator
         public bool IsAop { get; private set; } = false;
         public bool IsDynamicTheme { get; private set; } = false;
         public bool IsViewModel { get; private set; } = false;
+        public bool IsControl { get; private set; } = false;
         public IEnumerable<FieldRoslyn> FieldRoslyns { get; private set; } = [];
+
+        private static bool FindControlBase(INamedTypeSymbol typeSymbol)
+        {
+            var localBaseType = typeSymbol.BaseType;
+            if (localBaseType != null)
+            {
+                if (typeSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == "System.Windows.Controls.Control")
+                {
+                    return true;
+                }
+                else
+                {
+                    if (localBaseType.BaseType != null)
+                    {
+                        return FindControlBase(localBaseType.BaseType);
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+            }
+            else
+            {
+                return false;
+            }
+        }
+        private static bool IsObservableFieldExist(INamedTypeSymbol classSymbol, out IEnumerable<IFieldSymbol> fieldSymbols)
+        {
+            fieldSymbols = classSymbol.GetMembers()
+                    .OfType<IFieldSymbol>()
+                    .Where(field => field.GetAttributes().Any(attr => attr.AttributeClass?.Name == "ObservableAttribute"));
+            return fieldSymbols.Any();
+        }
+        private static HashSet<string> GetReferencedNamespaces(INamedTypeSymbol namedTypeSymbol)
+        {
+            HashSet<string> namespaces = [];
+
+            var syntaxRef = namedTypeSymbol.DeclaringSyntaxReferences.FirstOrDefault();
+            if (syntaxRef == null)
+            {
+                return namespaces;
+            }
+            var classDecl = syntaxRef.GetSyntax() as ClassDeclarationSyntax;
+            if (classDecl == null)
+            {
+                return namespaces;
+            }
+            var compilationUnit = classDecl.FirstAncestorOrSelf<CompilationUnitSyntax>();
+            if (compilationUnit == null)
+            {
+                return namespaces;
+            }
+
+            foreach (var usingDirective in compilationUnit.Usings)
+            {
+                if (usingDirective.Name is IdentifierNameSyntax identifierName)
+                {
+                    namespaces.Add($"using {identifierName.Identifier.Text}");
+                }
+                else if (usingDirective.Name is QualifiedNameSyntax qualifiedName)
+                {
+                    namespaces.Add($"using {qualifiedName.ToFullString()}");
+                }
+            }
+
+            return namespaces;
+        }
 
         public string GenerateUsing()
         {
             StringBuilder sourceBuilder = new();
             sourceBuilder.AppendLine("#nullable enable");
             sourceBuilder.AppendLine();
-            sourceBuilder.AppendLine("using System;");
-            sourceBuilder.AppendLine("using System.ComponentModel;");
-            sourceBuilder.AppendLine("using MinimalisticWPF;");
+            var hashUsings = GetReferencedNamespaces(Symbol);
+            if (IsViewModel)
+            {
+                hashUsings.Add("using System.ComponentModel;");
+            }
             if (IsDynamicTheme)
             {
-                sourceBuilder.AppendLine("using MinimalisticWPF.StructuralDesign.Theme;");
+                hashUsings.Add("using MinimalisticWPF.StructuralDesign.Theme;");
             }
             if (IsAop)
             {
-                sourceBuilder.AppendLine("using MinimalisticWPF.AopInterfaces;");
+                hashUsings.Add("using MinimalisticWPF.AopInterfaces;");
+            }
+            foreach (var use in hashUsings)
+            {
+                sourceBuilder.AppendLine(use);
             }
             sourceBuilder.AppendLine();
             return sourceBuilder.ToString();
@@ -204,7 +283,7 @@ namespace MinimalisticWPF.Generator
                         sourceBuilder.AppendLine($"      partial void On{themeText}Hovered{fieldRoslyn.PropertyName}Changed({fieldRoslyn.TypeName} oldValue,{fieldRoslyn.TypeName} newValue);");
                         sourceBuilder.AppendLine();
 
-                        sourceBuilder.AppendLine($"      private {fieldRoslyn.TypeName} _{themeText}NoHovered{fieldRoslyn.PropertyName};");
+                        sourceBuilder.AppendLine($"      private {fieldRoslyn.TypeName} _{themeText}NoHovered{fieldRoslyn.PropertyName} = ({fieldRoslyn.TypeName})DynamicTheme.GetThemeValue(typeof({Syntax.Identifier.Text}),typeof({themeText}),nameof({fieldRoslyn.PropertyName}));");
                         sourceBuilder.AppendLine($"      public {fieldRoslyn.TypeName} {themeText}NoHovered{fieldRoslyn.PropertyName}");
                         sourceBuilder.AppendLine("      {");
                         sourceBuilder.AppendLine($"         get => _{themeText}NoHovered{fieldRoslyn.PropertyName};");
@@ -239,7 +318,7 @@ namespace MinimalisticWPF.Generator
                     sourceBuilder.AppendLine($"      partial void OnHovered{fieldRoslyn.PropertyName}Changed({fieldRoslyn.TypeName} oldValue,{fieldRoslyn.TypeName} newValue);");
                     sourceBuilder.AppendLine();
 
-                    sourceBuilder.AppendLine($"      private {fieldRoslyn.TypeName} _NoHovered{fieldRoslyn.PropertyName};");
+                    sourceBuilder.AppendLine($"      private {fieldRoslyn.TypeName} _NoHovered{fieldRoslyn.PropertyName}{fieldRoslyn.Initial};");
                     sourceBuilder.AppendLine($"      public {fieldRoslyn.TypeName} NoHovered{fieldRoslyn.PropertyName}");
                     sourceBuilder.AppendLine("      {");
                     sourceBuilder.AppendLine($"         get => _NoHovered{fieldRoslyn.PropertyName};");
@@ -266,6 +345,5 @@ namespace MinimalisticWPF.Generator
             sourceBuilder.AppendLine("}");
             return sourceBuilder.ToString();
         }
-
     }
 }

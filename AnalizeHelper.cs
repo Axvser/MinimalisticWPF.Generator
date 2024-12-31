@@ -22,28 +22,6 @@ namespace MinimalisticWPF.Generator
                     .SelectMany(al => al.Attributes)
                     .Any(attr => attr.Name.ToString() == "AspectOriented"));
         }
-        internal static bool IsDynamicTheme(ClassDeclarationSyntax classDecl)
-        {
-            var attributeLists = classDecl.AttributeLists;
-            foreach (var attributeList in attributeLists)
-            {
-                foreach (var attribute in attributeList.Attributes)
-                {
-                    if (attribute.Name.ToString() == "DynamicTheme")
-                    {
-                        return true;
-                    }
-                }
-            }
-            return false;
-        }
-        internal static bool IsVMFieldExist(INamedTypeSymbol classSymbol, out IEnumerable<IFieldSymbol> fieldSymbols)
-        {
-            fieldSymbols = classSymbol.GetMembers()
-                    .OfType<IFieldSymbol>()
-                    .Where(field => field.GetAttributes().Any(attr => attr.AttributeClass?.Name == "ObservableAttribute"));
-            return fieldSymbols.Any();
-        }
 
         internal static ClassDeclarationSyntax GetClassDeclaration(GeneratorSyntaxContext context)
         {
