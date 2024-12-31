@@ -120,6 +120,7 @@ namespace MinimalisticWPF.Generator
             sourceBuilder.AppendLine("#nullable enable");
             sourceBuilder.AppendLine();
             var hashUsings = GetReferencedNamespaces(Symbol);
+            hashUsings.Add("using MinimalisticWPF;");
             hashUsings.Add("using MinimalisticWPF.Animator;");
             if (IsViewModel)
             {
