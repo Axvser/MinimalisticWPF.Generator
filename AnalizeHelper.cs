@@ -16,18 +16,11 @@ namespace MinimalisticWPF.Generator
         }
         internal static bool IsAopClass(ClassDeclarationSyntax classDecl)
         {
-            var attributeLists = classDecl.AttributeLists;
-            foreach (var attributeList in attributeLists)
-            {
-                foreach (var attribute in attributeList.Attributes)
-                {
-                    if (attribute.Name.ToString() == "AspectOriented")
-                    {
-                        return true;
-                    }
-                }
-            }
-            return false;
+            return classDecl.Members
+                .OfType<MemberDeclarationSyntax>()
+                .Any(member => member.AttributeLists
+                    .SelectMany(al => al.Attributes)
+                    .Any(attr => attr.Name.ToString() == "AspectOriented"));
         }
         internal static bool IsDynamicTheme(ClassDeclarationSyntax classDecl)
         {

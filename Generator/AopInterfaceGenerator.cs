@@ -34,7 +34,9 @@ namespace MinimalisticWPF.Generator
                     .AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword))
                     .WithBaseList(baseList);
 
-                foreach (var field in classDeclaration.Members.OfType<FieldDeclarationSyntax>().Where(fd => fd.AttributeLists.Any(atts => atts.Attributes.Any(att => att.ToString() == "VMProperty"))))
+                foreach (var field in classDeclaration.Members.OfType<FieldDeclarationSyntax>()
+                    .Where(fd => fd.AttributeLists.Any(atts => atts.Attributes.Any(att => att.ToString().Contains("Observable")))
+                              && fd.AttributeLists.Any(atts => atts.Attributes.Any(att => att.ToString() == "AspectOriented"))))
                 {
                     foreach (var variable in field.Declaration.Variables)
                     {
@@ -59,7 +61,9 @@ namespace MinimalisticWPF.Generator
                     }
                 }
 
-                foreach (var property in classDeclaration.Members.OfType<PropertyDeclarationSyntax>().Where(p => p.Modifiers.Any(m => m.IsKind(SyntaxKind.PublicKeyword))))
+                foreach (var property in classDeclaration.Members.OfType<PropertyDeclarationSyntax>()
+                    .Where(p => p.Modifiers.Any(m => m.IsKind(SyntaxKind.PublicKeyword))
+                             && p.AttributeLists.Any(atts => atts.Attributes.Any(att => att.ToString() == "AspectOriented"))))
                 {
                     TypeSyntax propertyType = property.Type;
 
@@ -89,7 +93,9 @@ namespace MinimalisticWPF.Generator
                     interfaceDeclaration = interfaceDeclaration.AddMembers(prop);
                 }
 
-                foreach (var method in classDeclaration.Members.OfType<MethodDeclarationSyntax>().Where(m => m.Modifiers.Any(mod => mod.IsKind(SyntaxKind.PublicKeyword))))
+                foreach (var method in classDeclaration.Members.OfType<MethodDeclarationSyntax>()
+                    .Where(m => m.Modifiers.Any(mod => mod.IsKind(SyntaxKind.PublicKeyword))
+                             && m.AttributeLists.Any(atts => atts.Attributes.Any(att => att.ToString() == "AspectOriented"))))
                 {
                     TypeSyntax returnType = method.ReturnType;
                     ParameterListSyntax parameterList = method.ParameterList;
