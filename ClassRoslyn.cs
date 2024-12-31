@@ -18,7 +18,6 @@ namespace MinimalisticWPF.Generator
                 .Any(member => member.GetAttributes()
                 .Any(att => att.AttributeClass?.AllInterfaces.Any(i => i.Name == "IThemeAttribute") ?? false));
             IsAop = AnalizeHelper.IsAopClass(classDeclarationSyntax);
-            IsControl = FindControlBase(namedTypeSymbol);
             IsViewModel = IsObservableFieldExist(namedTypeSymbol, out var vmfields);
             if (vmfields != null)
             {
@@ -31,7 +30,6 @@ namespace MinimalisticWPF.Generator
         public bool IsAop { get; private set; } = false;
         public bool IsDynamicTheme { get; private set; } = false;
         public bool IsViewModel { get; private set; } = false;
-        public bool IsControl { get; private set; } = false;
         public IEnumerable<FieldRoslyn> FieldRoslyns { get; private set; } = [];
 
         private static bool FindControlBase(INamedTypeSymbol typeSymbol)
@@ -100,6 +98,21 @@ namespace MinimalisticWPF.Generator
             }
 
             return namespaces;
+        }
+        private static string GetComment(string title, string[] messages)
+        {
+            StringBuilder sb = new StringBuilder();
+
+            sb.AppendLine($"      /* {title}");
+
+            foreach (var message in messages)
+            {
+                sb.AppendLine("       * " + message);
+            }
+
+            sb.AppendLine("      */");
+
+            return sb.ToString();
         }
 
         public string GenerateUsing()
@@ -258,8 +271,30 @@ namespace MinimalisticWPF.Generator
         }
         public string GenerateHoverControl()
         {
-            var hoverables = FieldRoslyns.Where(fr => fr.CanHover);
+            var hoverables = FieldRoslyns.Where(fr => fr.CanHover).ToArray();
             StringBuilder sourceBuilder = new();
+
+            sourceBuilder.Append(GetComment("HoverControl ↓↓↓ ___________________________________",
+                ["TransitionBoard => describes the hover animation",
+                "(No)HoveredProperties => represents the hover effect in different states",
+                "Partial Methods => you can modify the animation as these Properties change"
+                ]));
+
+            sourceBuilder.AppendLine($$"""
+                      public TransitionBoard<{{Syntax.Identifier.Text}}> HoveredTransition { get; set; } = Transition.Create<{{Syntax.Identifier.Text}}>();
+                """);
+            sourceBuilder.AppendLine($$"""
+                      public TransitionBoard<{{Syntax.Identifier.Text}}> NoHoveredTransition { get; set; } = Transition.Create<{{Syntax.Identifier.Text}}>()
+                """);
+            for (var i = 0; i < hoverables.Length; i++)
+            {
+                if (!string.IsNullOrEmpty(hoverables[i].Initial))
+                {
+                    sourceBuilder.AppendLine($"         .SetProperty(x => x.{hoverables[i].PropertyName}, {hoverables[i].Initial.Replace("=", string.Empty).TrimStart()})" + (i == hoverables.Length - 1 ? ";" : string.Empty));
+                }
+            }
+
+            sourceBuilder.AppendLine();
 
             foreach (var fieldRoslyn in hoverables)
             {
@@ -274,12 +309,10 @@ namespace MinimalisticWPF.Generator
                         sourceBuilder.AppendLine("         set");
                         sourceBuilder.AppendLine("         {");
                         sourceBuilder.AppendLine($"            var oldValue = _{themeText}Hovered{fieldRoslyn.PropertyName};");
-                        sourceBuilder.AppendLine($"            On{themeText}Hovered{fieldRoslyn.PropertyName}Changing(oldValue,value);");
                         sourceBuilder.AppendLine($"            _{themeText}Hovered{fieldRoslyn.PropertyName} = value;");
                         sourceBuilder.AppendLine($"            On{themeText}Hovered{fieldRoslyn.PropertyName}Changed(oldValue,value);");
                         sourceBuilder.AppendLine("         }");
                         sourceBuilder.AppendLine("      }");
-                        sourceBuilder.AppendLine($"      partial void On{themeText}Hovered{fieldRoslyn.PropertyName}Changing({fieldRoslyn.TypeName} oldValue,{fieldRoslyn.TypeName} newValue);");
                         sourceBuilder.AppendLine($"      partial void On{themeText}Hovered{fieldRoslyn.PropertyName}Changed({fieldRoslyn.TypeName} oldValue,{fieldRoslyn.TypeName} newValue);");
                         sourceBuilder.AppendLine();
 
@@ -290,12 +323,10 @@ namespace MinimalisticWPF.Generator
                         sourceBuilder.AppendLine("         set");
                         sourceBuilder.AppendLine("         {");
                         sourceBuilder.AppendLine($"            var oldValue = _{themeText}NoHovered{fieldRoslyn.PropertyName};");
-                        sourceBuilder.AppendLine($"            On{themeText}NoHovered{fieldRoslyn.PropertyName}Changing(oldValue,value);");
                         sourceBuilder.AppendLine($"            _{themeText}NoHovered{fieldRoslyn.PropertyName} = value;");
                         sourceBuilder.AppendLine($"            On{themeText}NoHovered{fieldRoslyn.PropertyName}Changed(oldValue,value);");
                         sourceBuilder.AppendLine("         }");
                         sourceBuilder.AppendLine("      }");
-                        sourceBuilder.AppendLine($"      partial void On{themeText}NoHovered{fieldRoslyn.PropertyName}Changing({fieldRoslyn.TypeName} oldValue,{fieldRoslyn.TypeName} newValue);");
                         sourceBuilder.AppendLine($"      partial void On{themeText}NoHovered{fieldRoslyn.PropertyName}Changed({fieldRoslyn.TypeName} oldValue,{fieldRoslyn.TypeName} newValue);");
                         sourceBuilder.AppendLine();
                     }
@@ -309,12 +340,10 @@ namespace MinimalisticWPF.Generator
                     sourceBuilder.AppendLine("         set");
                     sourceBuilder.AppendLine("         {");
                     sourceBuilder.AppendLine($"            var oldValue = _Hovered{fieldRoslyn.PropertyName};");
-                    sourceBuilder.AppendLine($"            OnHovered{fieldRoslyn.PropertyName}Changing(oldValue,value);");
                     sourceBuilder.AppendLine($"            _Hovered{fieldRoslyn.PropertyName} = value;");
                     sourceBuilder.AppendLine($"            OnHovered{fieldRoslyn.PropertyName}Changed(oldValue,value);");
                     sourceBuilder.AppendLine("         }");
                     sourceBuilder.AppendLine("      }");
-                    sourceBuilder.AppendLine($"      partial void OnHovered{fieldRoslyn.PropertyName}Changing({fieldRoslyn.TypeName} oldValue,{fieldRoslyn.TypeName} newValue);");
                     sourceBuilder.AppendLine($"      partial void OnHovered{fieldRoslyn.PropertyName}Changed({fieldRoslyn.TypeName} oldValue,{fieldRoslyn.TypeName} newValue);");
                     sourceBuilder.AppendLine();
 
@@ -325,16 +354,16 @@ namespace MinimalisticWPF.Generator
                     sourceBuilder.AppendLine("         set");
                     sourceBuilder.AppendLine("         {");
                     sourceBuilder.AppendLine($"            var oldValue = _NoHovered{fieldRoslyn.PropertyName};");
-                    sourceBuilder.AppendLine($"            OnNoHovered{fieldRoslyn.PropertyName}Changing(oldValue,value);");
                     sourceBuilder.AppendLine($"            _NoHovered{fieldRoslyn.PropertyName} = value;");
                     sourceBuilder.AppendLine($"            OnNoHovered{fieldRoslyn.PropertyName}Changed(oldValue,value);");
                     sourceBuilder.AppendLine("         }");
                     sourceBuilder.AppendLine("      }");
-                    sourceBuilder.AppendLine($"      partial void OnNoHovered{fieldRoslyn.PropertyName}Changing({fieldRoslyn.TypeName} oldValue,{fieldRoslyn.TypeName} newValue);");
                     sourceBuilder.AppendLine($"      partial void OnNoHovered{fieldRoslyn.PropertyName}Changed({fieldRoslyn.TypeName} oldValue,{fieldRoslyn.TypeName} newValue);");
                     sourceBuilder.AppendLine();
                 }
             }
+
+            sourceBuilder.Append(GetComment("HoverControl ↑↑↑ ___________________________________", []));
 
             return sourceBuilder.ToString();
         }

@@ -11,7 +11,7 @@ using Microsoft.CodeAnalysis.Text;
 namespace MinimalisticWPF.Generator
 {
     [Generator]
-    public class VMClassGenerator : IIncrementalGenerator
+    public class ViewModelClassGenerator : IIncrementalGenerator
     {
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
@@ -75,7 +75,7 @@ namespace MinimalisticWPF.Generator
 
             foreach (var kvp in generatedSources)
             {
-                context.AddSource($"{kvp.Key.Item1.ContainingNamespace.ToString().Replace('.', '_')}_{kvp.Key.Item2.Identifier.Text}_VMClass.g.cs", SourceText.From(kvp.Value.ToString(), Encoding.UTF8));
+                context.AddSource($"{kvp.Key.Item1.ContainingNamespace.ToString().Replace('.', '_')}_{kvp.Key.Item2.Identifier.Text}_ViewModel.g.cs", SourceText.From(kvp.Value.ToString(), Encoding.UTF8));
             }
         }
     }
