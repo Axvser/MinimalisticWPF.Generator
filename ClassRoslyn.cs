@@ -171,6 +171,10 @@ namespace MinimalisticWPF.Generator
                               {{share}} : {{result}}
                               {
                            """;
+                if(IsAop)
+                {
+                    sourceBuilder.AppendLine("[DynamicTheme]");
+                }
                 sourceBuilder.AppendLine(source);
             }
             else
@@ -179,6 +183,10 @@ namespace MinimalisticWPF.Generator
                               {{share}}
                               {
                            """;
+                if (IsAop)
+                {
+                    sourceBuilder.AppendLine("[DynamicTheme]");
+                }
                 sourceBuilder.AppendLine(source);
             }
             return sourceBuilder.ToString();
