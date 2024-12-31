@@ -87,13 +87,12 @@ namespace MinimalisticWPF.Generator
 
             foreach (var usingDirective in compilationUnit.Usings)
             {
-                if (usingDirective.Name is IdentifierNameSyntax identifierName)
+                if (usingDirective != null)
                 {
-                    namespaces.Add($"using {identifierName.Identifier.Text}");
-                }
-                else if (usingDirective.Name is QualifiedNameSyntax qualifiedName)
-                {
-                    namespaces.Add($"using {qualifiedName.ToFullString()}");
+                    if (usingDirective.Name != null)
+                    {
+                        namespaces.Add($"using {usingDirective.Name};");
+                    }
                 }
             }
 
@@ -121,6 +120,7 @@ namespace MinimalisticWPF.Generator
             sourceBuilder.AppendLine("#nullable enable");
             sourceBuilder.AppendLine();
             var hashUsings = GetReferencedNamespaces(Symbol);
+            hashUsings.Add("using MinimalisticWPF.Animator;");
             if (IsViewModel)
             {
                 hashUsings.Add("using System.ComponentModel;");
