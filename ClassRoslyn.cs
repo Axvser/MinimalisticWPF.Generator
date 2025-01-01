@@ -18,7 +18,7 @@ namespace MinimalisticWPF.Generator
                 .Any(member => member.GetAttributes()
                 .Any(att => att.AttributeClass?.AllInterfaces.Any(i => i.Name == "IThemeAttribute") ?? false));
             IsThemeAttributeExsist = namedTypeSymbol.GetAttributes()
-                .Any(att => att.AttributeClass?.Name == "DynamicTheme");
+                .Any(att => att.AttributeClass?.Name == "DynamicThemeAttribute");
             IsAop = AnalizeHelper.IsAopClass(classDeclarationSyntax);
             IsViewModel = IsObservableFieldExist(namedTypeSymbol, out var vmfields);
             if (vmfields != null)
