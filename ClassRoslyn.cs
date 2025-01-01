@@ -17,6 +17,8 @@ namespace MinimalisticWPF.Generator
                 .GetMembers()
                 .Any(member => member.GetAttributes()
                 .Any(att => att.AttributeClass?.AllInterfaces.Any(i => i.Name == "IThemeAttribute") ?? false));
+            IsThemeAttributeExsist = namedTypeSymbol.GetAttributes()
+                .Any(att => att.AttributeClass?.Name == "DynamicTheme");
             IsAop = AnalizeHelper.IsAopClass(classDeclarationSyntax);
             IsViewModel = IsObservableFieldExist(namedTypeSymbol, out var vmfields);
             if (vmfields != null)
@@ -30,6 +32,7 @@ namespace MinimalisticWPF.Generator
         public bool IsAop { get; private set; } = false;
         public bool IsDynamicTheme { get; private set; } = false;
         public bool IsViewModel { get; private set; } = false;
+        public bool IsThemeAttributeExsist { get; private set; } = false;
         public IEnumerable<FieldRoslyn> FieldRoslyns { get; private set; } = [];
 
         private static bool FindControlBase(INamedTypeSymbol typeSymbol)
@@ -172,7 +175,7 @@ namespace MinimalisticWPF.Generator
                               {{share}} : {{result}}
                               {
                            """;
-                if(IsDynamicTheme)
+                if (IsDynamicTheme && !IsThemeAttributeExsist)
                 {
                     sourceBuilder.AppendLine("   [DynamicTheme]");
                 }
@@ -184,7 +187,7 @@ namespace MinimalisticWPF.Generator
                               {{share}}
                               {
                            """;
-                if (IsDynamicTheme)
+                if (IsDynamicTheme && !IsThemeAttributeExsist)
                 {
                     sourceBuilder.AppendLine("   [DynamicTheme]");
                 }
@@ -288,18 +291,26 @@ namespace MinimalisticWPF.Generator
                 "(No)HoveredProperties => represents the hover effect in different states",
                 "Partial Methods => you can modify the animation as these Properties change"
                 ]));
-
+            var nohoveredEnd = hoverables.Length == 0 ? ";" : string.Empty;
             sourceBuilder.AppendLine($$"""
                       public TransitionBoard<{{Syntax.Identifier.Text}}> HoveredTransition { get; set; } = Transition.Create<{{Syntax.Identifier.Text}}>();
                 """);
             sourceBuilder.AppendLine($$"""
-                      public TransitionBoard<{{Syntax.Identifier.Text}}> NoHoveredTransition { get; set; } = Transition.Create<{{Syntax.Identifier.Text}}>()
+                      public TransitionBoard<{{Syntax.Identifier.Text}}> NoHoveredTransition { get; set; } = Transition.Create<{{Syntax.Identifier.Text}}>(){{nohoveredEnd}}
                 """);
             for (var i = 0; i < hoverables.Length; i++)
             {
+                var isLast = i == hoverables.Length - 1;
                 if (!string.IsNullOrEmpty(hoverables[i].Initial))
                 {
-                    sourceBuilder.AppendLine($"         .SetProperty(x => x.{hoverables[i].PropertyName}, {hoverables[i].Initial.Replace("=", string.Empty).TrimStart()})" + (i == hoverables.Length - 1 ? ";" : string.Empty));
+                    sourceBuilder.AppendLine($"         .SetProperty(x => x.{hoverables[i].PropertyName}, {hoverables[i].Initial.Replace("=", string.Empty).TrimStart()})" + (isLast ? ";" : string.Empty));
+                }
+                else
+                {
+                    if (isLast)
+                    {
+                        sourceBuilder.Append(';');
+                    }
                 }
             }
 
