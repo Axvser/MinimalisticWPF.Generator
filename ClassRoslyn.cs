@@ -291,28 +291,20 @@ namespace MinimalisticWPF.Generator
                 "(No)HoveredProperties => represents the hover effect in different states",
                 "Partial Methods => you can modify the animation as these Properties change"
                 ]));
-            var nohoveredEnd = hoverables.Length == 0 ? ";" : string.Empty;
             sourceBuilder.AppendLine($$"""
                       public TransitionBoard<{{Syntax.Identifier.Text}}> HoveredTransition { get; set; } = Transition.Create<{{Syntax.Identifier.Text}}>();
                 """);
             sourceBuilder.AppendLine($$"""
-                      public TransitionBoard<{{Syntax.Identifier.Text}}> NoHoveredTransition { get; set; } = Transition.Create<{{Syntax.Identifier.Text}}>(){{nohoveredEnd}}
+                      public TransitionBoard<{{Syntax.Identifier.Text}}> NoHoveredTransition { get; set; } = Transition.Create<{{Syntax.Identifier.Text}}>()
                 """);
             for (var i = 0; i < hoverables.Length; i++)
             {
-                var isLast = i == hoverables.Length - 1;
                 if (!string.IsNullOrEmpty(hoverables[i].Initial))
                 {
-                    sourceBuilder.AppendLine($"         .SetProperty(x => x.{hoverables[i].PropertyName}, {hoverables[i].Initial.Replace("=", string.Empty).TrimStart()})" + (isLast ? ";" : string.Empty));
-                }
-                else
-                {
-                    if (isLast)
-                    {
-                        sourceBuilder.Append(';');
-                    }
+                    sourceBuilder.AppendLine($"         .SetProperty(x => x.{hoverables[i].PropertyName}, {hoverables[i].Initial.Replace("=", string.Empty).TrimStart()})");
                 }
             }
+            sourceBuilder.Append(';');
 
             sourceBuilder.AppendLine();
 
