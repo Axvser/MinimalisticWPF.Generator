@@ -543,8 +543,8 @@ namespace MinimalisticWPF.Generator
                 {
                     foreach (var themeText in fieldRoslyn.ThemeAttributes.Select(t => t.Split('(')[0]))
                     {
-                        sourceBuilder.AppendLine($"          HoveredTransition.SetProperty(b => b.{fieldRoslyn.PropertyName}, {fieldRoslyn.PropertyName}_SelectThemeValue_Hovered(nameof({themeText}));");
-                        sourceBuilder.AppendLine($"          NoHoveredTransition.SetProperty(b => b.{fieldRoslyn.PropertyName}, {fieldRoslyn.PropertyName}_SelectThemeValue_NoHovered(nameof({themeText}));");
+                        sourceBuilder.AppendLine($"          HoveredTransition.SetProperty(b => b.{fieldRoslyn.PropertyName}, {fieldRoslyn.PropertyName}_SelectThemeValue_Hovered(nameof({themeText})));");
+                        sourceBuilder.AppendLine($"          NoHoveredTransition.SetProperty(b => b.{fieldRoslyn.PropertyName}, {fieldRoslyn.PropertyName}_SelectThemeValue_NoHovered(nameof({themeText})));");
                     }
                 }
                 sourceBuilder.AppendLine();
@@ -568,7 +568,7 @@ namespace MinimalisticWPF.Generator
                         sourceBuilder.AppendLine($"                 return {themeText}Hovered{fieldRoslyn.PropertyName};");
                     }
                     sourceBuilder.AppendLine("         }");
-                    sourceBuilder.AppendLine($"         return {fieldRoslyn.PropertyName}");
+                    sourceBuilder.AppendLine($"         return {fieldRoslyn.PropertyName};");
                     sourceBuilder.AppendLine("      }");
                 }
                 sourceBuilder.AppendLine();
@@ -589,7 +589,7 @@ namespace MinimalisticWPF.Generator
                         sourceBuilder.AppendLine($"                 return {themeText}NoHovered{fieldRoslyn.PropertyName};");
                     }
                     sourceBuilder.AppendLine("         }");
-                    sourceBuilder.AppendLine($"         return {fieldRoslyn.PropertyName}");
+                    sourceBuilder.AppendLine($"         return {fieldRoslyn.PropertyName};");
                     sourceBuilder.AppendLine("      }");
                 }
                 sourceBuilder.AppendLine();
