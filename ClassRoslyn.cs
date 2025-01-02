@@ -557,7 +557,7 @@ namespace MinimalisticWPF.Generator
                                     NoHoveredTransition.SetProperty(x => x.{{fieldRoslyn.PropertyName}}, value);
                                     if (!IsHoverChanging && !IsHovered)
                                     {
-                                        {{fieldRoslyn.PropertyName}} = newValue;
+                                        {{fieldRoslyn.PropertyName}} = value;
                                     }
                         """);
                     sourceBuilder.AppendLine($"            OnNoHovered{fieldRoslyn.PropertyName}Changed(oldValue,value);");
@@ -579,10 +579,9 @@ namespace MinimalisticWPF.Generator
             {
                 if (IsDynamicTheme && fieldRoslyn.ThemeAttributes.Count > 0)
                 {
-                        sourceBuilder.AppendLine($"          HoveredTransition.SetProperty(b => b.{fieldRoslyn.PropertyName}, {fieldRoslyn.PropertyName}_SelectThemeValue_Hovered(CurrentTheme.Name));");
-                        sourceBuilder.AppendLine($"          NoHoveredTransition.SetProperty(b => b.{fieldRoslyn.PropertyName}, {fieldRoslyn.PropertyName}_SelectThemeValue_NoHovered(CurrentTheme.Name));");
+                        sourceBuilder.AppendLine($"             HoveredTransition.SetProperty(b => b.{fieldRoslyn.PropertyName}, {fieldRoslyn.PropertyName}_SelectThemeValue_Hovered(CurrentTheme.Name));");
+                        sourceBuilder.AppendLine($"             NoHoveredTransition.SetProperty(b => b.{fieldRoslyn.PropertyName}, {fieldRoslyn.PropertyName}_SelectThemeValue_NoHovered(CurrentTheme.Name));");
                 }
-                sourceBuilder.AppendLine();
             }
             sourceBuilder.AppendLine("         }");
             sourceBuilder.AppendLine();
