@@ -573,20 +573,18 @@ namespace MinimalisticWPF.Generator
             //生成主题修改后的动画效果更新函数
             sourceBuilder.AppendLine("      protected virtual void UpdateTransitionBoard()");
             sourceBuilder.AppendLine("      {");
-            sourceBuilder.AppendLine("          var isdark = CurrentTheme == typeof(Dark);");
-            sourceBuilder.AppendLine();
+            sourceBuilder.AppendLine("         if(CurrentTheme != null)");
+            sourceBuilder.AppendLine("         {");
             foreach (var fieldRoslyn in hoverables)
             {
                 if (IsDynamicTheme && fieldRoslyn.ThemeAttributes.Count > 0)
                 {
-                    foreach (var themeText in fieldRoslyn.ThemeAttributes.Select(t => t.Split('(')[0]))
-                    {
-                        sourceBuilder.AppendLine($"          HoveredTransition.SetProperty(b => b.{fieldRoslyn.PropertyName}, {fieldRoslyn.PropertyName}_SelectThemeValue_Hovered(nameof({themeText})));");
-                        sourceBuilder.AppendLine($"          NoHoveredTransition.SetProperty(b => b.{fieldRoslyn.PropertyName}, {fieldRoslyn.PropertyName}_SelectThemeValue_NoHovered(nameof({themeText})));");
-                    }
+                        sourceBuilder.AppendLine($"          HoveredTransition.SetProperty(b => b.{fieldRoslyn.PropertyName}, {fieldRoslyn.PropertyName}_SelectThemeValue_Hovered(CurrentTheme.Name));");
+                        sourceBuilder.AppendLine($"          NoHoveredTransition.SetProperty(b => b.{fieldRoslyn.PropertyName}, {fieldRoslyn.PropertyName}_SelectThemeValue_NoHovered(CurrentTheme.Name));");
                 }
                 sourceBuilder.AppendLine();
             }
+            sourceBuilder.AppendLine("         }");
             sourceBuilder.AppendLine();
             sourceBuilder.AppendLine("          this.BeginTransition(IsHovered ? HoveredTransition : NoHoveredTransition);");
             sourceBuilder.AppendLine("      }");
