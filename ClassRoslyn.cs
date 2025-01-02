@@ -367,6 +367,9 @@ namespace MinimalisticWPF.Generator
             }
 
             var hoverables = FieldRoslyns.Where(fr => fr.CanHover).ToArray();
+
+            if (hoverables.Length == 0) return string.Empty;
+
             StringBuilder sourceBuilder = new();
 
             sourceBuilder.Append(GetComment("HoverControl ↓↓↓ ___________________________________",
@@ -389,6 +392,23 @@ namespace MinimalisticWPF.Generator
                                {
                                    this.BeginTransition(value ? HoveredTransition : NoHoveredTransition);
                                }
+                            }
+                         }
+                      }
+                """);
+
+            sourceBuilder.AppendLine();
+
+            sourceBuilder.AppendLine($$"""
+                      private bool _isHoverChanging = false;
+                      public bool IsHoverChanging
+                      {
+                         get => _isHoverChanging;
+                         set
+                         {
+                            if(_isHoverChanging != value)
+                            {
+                               _isHoverChanging = value;
                             }
                          }
                       }
@@ -632,6 +652,49 @@ namespace MinimalisticWPF.Generator
                                    }
                             """);
                     }
+                }
+                else
+                {
+                    sourceBuilder.AppendLine($$"""
+                                   public {{fieldRoslyn.TypeName}} Hovered{{fieldRoslyn.PropertyName}}
+                                   {
+                                      get => ({{fieldRoslyn.TypeName}})((({{typeNameSpace}}.{{typeName}})DataContext).Hovered{{fieldRoslyn.PropertyName}});
+                                      set => SetValue(Hovered{{fieldRoslyn.PropertyName}}Property, value);
+                                   }
+                                   public static readonly DependencyProperty Hovered{{fieldRoslyn.PropertyName}}Property =
+                                      DependencyProperty.Register(
+                                      nameof(Hovered{{fieldRoslyn.PropertyName}}),
+                                      typeof({{fieldRoslyn.TypeName}}),
+                                      typeof({{localTypeName}}),
+                                      new PropertyMetadata({{fieldRoslyn.Initial.InitialTextParse()}}, OnHovered{{fieldRoslyn.PropertyName}}Changed));   
+                                   private static void OnHovered{{fieldRoslyn.PropertyName}}Changed(DependencyObject d, DependencyPropertyChangedEventArgs e)
+                                   {
+                                      if (d is {{localTypeName}} control && control.DataContext is {{typeNameSpace}}.{{typeName}} viewModel)
+                                      {
+                                         viewModel.Hovered{{fieldRoslyn.PropertyName}} = ({{fieldRoslyn.TypeName}})e.NewValue;
+                                      }
+                                   }
+                            """);
+                    sourceBuilder.AppendLine($$"""
+                                   public {{fieldRoslyn.TypeName}} NoHovered{{fieldRoslyn.PropertyName}}
+                                   {
+                                      get => ({{fieldRoslyn.TypeName}})((({{typeNameSpace}}.{{typeName}})DataContext).NoHovered{{fieldRoslyn.PropertyName}});
+                                      set => SetValue(NoHovered{{fieldRoslyn.PropertyName}}Property, value);
+                                   }
+                                   public static readonly DependencyProperty NoHovered{{fieldRoslyn.PropertyName}}Property =
+                                      DependencyProperty.Register(
+                                      nameof(NoHovered{{fieldRoslyn.PropertyName}}),
+                                      typeof({{fieldRoslyn.TypeName}}),
+                                      typeof({{localTypeName}}),
+                                      new PropertyMetadata({{fieldRoslyn.Initial.InitialTextParse()}}, OnNoHovered{{fieldRoslyn.PropertyName}}Changed));   
+                                   private static void OnNoHovered{{fieldRoslyn.PropertyName}}Changed(DependencyObject d, DependencyPropertyChangedEventArgs e)
+                                   {
+                                      if (d is {{localTypeName}} control && control.DataContext is {{typeNameSpace}}.{{typeName}} viewModel)
+                                      {
+                                         viewModel.NoHovered{{fieldRoslyn.PropertyName}} = ({{fieldRoslyn.TypeName}})e.NewValue;
+                                      }
+                                   }
+                            """);
                 }
                 sourceBuilder.AppendLine();
             }
