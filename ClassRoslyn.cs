@@ -39,6 +39,7 @@ namespace MinimalisticWPF.Generator
 
         public bool IsContextConfig { get; private set; } = false;
         public string ViewModelTypeName { get; private set; } = string.Empty;
+        public string ViewModelValidation { get; private set; } = string.Empty;
 
         private static bool FindControlBase(INamedTypeSymbol typeSymbol)
         {
@@ -132,6 +133,7 @@ namespace MinimalisticWPF.Generator
             }
             IsContextConfig = true;
             ViewModelTypeName = (string)attributeData.ConstructorArguments[0].Value!;
+            ViewModelValidation = (string)attributeData.ConstructorArguments[1].Value!;
         }
 
         public string GenerateUsing(HashSet<string> others)
