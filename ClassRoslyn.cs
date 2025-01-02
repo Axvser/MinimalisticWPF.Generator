@@ -298,6 +298,24 @@ namespace MinimalisticWPF.Generator
             {
                 builder.AppendLine($"         {method.Name}();");
             }
+            builder.AppendLine($$"""
+                         HoveredTransition.TransitionParams.Start += () =>
+                         {
+                             IsHoverChanging = true;
+                         };
+                         HoveredTransition.TransitionParams.Completed += () =>
+                         {
+                             IsHoverChanging = false;
+                         };
+                         NoHoveredTransition.TransitionParams.Start += () =>
+                         {
+                             IsHoverChanging = true;
+                         };
+                         NoHoveredTransition.TransitionParams.Completed += () =>
+                         {
+                             IsHoverChanging = false;
+                         };
+                """);
             builder.AppendLine("      }");
 
             var groupedMethods = methods.Where(m => m.Parameters.Any()).GroupBy(m =>
@@ -324,6 +342,24 @@ namespace MinimalisticWPF.Generator
                 {
                     builder.AppendLine($"         {method.Name}({callParameters});");
                 }
+                builder.AppendLine($$"""
+                         HoveredTransition.TransitionParams.Start += () =>
+                         {
+                             IsHoverChanging = true;
+                         };
+                         HoveredTransition.TransitionParams.Completed += () =>
+                         {
+                             IsHoverChanging = false;
+                         };
+                         NoHoveredTransition.TransitionParams.Start += () =>
+                         {
+                             IsHoverChanging = true;
+                         };
+                         NoHoveredTransition.TransitionParams.Completed += () =>
+                         {
+                             IsHoverChanging = false;
+                         };
+                """);
                 builder.AppendLine("      }");
             }
 
