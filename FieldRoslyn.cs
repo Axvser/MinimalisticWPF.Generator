@@ -59,13 +59,16 @@ namespace MinimalisticWPF.Generator
         }
         private void ReadObservableParams(IFieldSymbol fieldSymbol)
         {
-            AttributeData attributeData = fieldSymbol.GetAttributes()
-                .First(ad => ad.AttributeClass?.Name == "ObservableAttribute");
-            SetterValidation = (int)attributeData.ConstructorArguments[0].Value!;
-            CanOverride = (bool)attributeData.ConstructorArguments[1].Value!;
-            CanHover = (bool)attributeData.ConstructorArguments[2].Value!;
-            Cascades = attributeData.ConstructorArguments[3].Values
-                .Select(v => (string)v.Value!);
+            var attributeData = fieldSymbol.GetAttributes()
+                .FirstOrDefault(ad => ad.AttributeClass?.Name == "ObservableAttribute");
+            if (attributeData != null)
+            {
+                SetterValidation = (int)attributeData.ConstructorArguments[0].Value!;
+                CanOverride = (bool)attributeData.ConstructorArguments[1].Value!;
+                CanHover = (bool)attributeData.ConstructorArguments[2].Value!;
+                Cascades = attributeData.ConstructorArguments[3].Values
+                    .Select(v => (string)v.Value!);
+            }      
         }
         private static string ParseCascadeName(string value)
         {

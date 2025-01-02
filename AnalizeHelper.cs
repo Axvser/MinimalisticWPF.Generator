@@ -63,5 +63,9 @@ namespace MinimalisticWPF.Generator
         {
             return char.ToUpper(variable.Identifier.Text[1]) + variable.Identifier.Text.Substring(2);
         }
+        internal static string InitialTextParse(this string source)
+        {
+            return source.Replace('=', ' ').TrimStart();
+        }
     }
 }
