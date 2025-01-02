@@ -451,7 +451,7 @@ namespace MinimalisticWPF.Generator
                                         if(CurrentTheme == typeof({{themeText}}))
                                         {
                                            HoveredTransition.SetProperty(x => x.{{fieldRoslyn.PropertyName}}, value);
-                                           if(!IsHoverChanging && IsHovered !IsThemeChanging)
+                                           if(!IsHoverChanging && IsHovered && !IsThemeChanging)
                                            {
                                               {{fieldRoslyn.PropertyName}} = value;
                                            }
