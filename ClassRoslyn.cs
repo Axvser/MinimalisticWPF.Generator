@@ -313,7 +313,9 @@ namespace MinimalisticWPF.Generator
             {
                 builder.AppendLine($"         {method.Name}();");
             }
-            builder.AppendLine($$"""
+            if (IsDynamicTheme)
+            {
+                builder.AppendLine($$"""
                          HoveredTransition.TransitionParams.Start += () =>
                          {
                              IsHoverChanging = true;
@@ -331,6 +333,8 @@ namespace MinimalisticWPF.Generator
                              IsHoverChanging = false;
                          };
                 """);
+            }
+
             builder.AppendLine("      }");
 
             var groupedMethods = methods.Where(m => m.Parameters.Any()).GroupBy(m =>
@@ -357,7 +361,9 @@ namespace MinimalisticWPF.Generator
                 {
                     builder.AppendLine($"         {method.Name}({callParameters});");
                 }
-                builder.AppendLine($$"""
+                if (IsDynamicTheme)
+                {
+                    builder.AppendLine($$"""
                          HoveredTransition.TransitionParams.Start += () =>
                          {
                              IsHoverChanging = true;
@@ -375,6 +381,7 @@ namespace MinimalisticWPF.Generator
                              IsHoverChanging = false;
                          };
                 """);
+                }
                 builder.AppendLine("      }");
             }
 
