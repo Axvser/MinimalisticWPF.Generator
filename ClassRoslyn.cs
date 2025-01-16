@@ -25,6 +25,7 @@ namespace MinimalisticWPF.Generator
             if (vmfields != null)
             {
                 FieldRoslyns = vmfields.Select(field => new FieldRoslyn(field));
+                IsHoverApplied = FieldRoslyns.Any(f => f.CanHover);
                 IsPoolApplied = FieldRoslyns.Any(f => f.CanInvokeRelease);
             }
             ReadContextConfigParams(namedTypeSymbol);
@@ -36,6 +37,7 @@ namespace MinimalisticWPF.Generator
         public bool IsDynamicTheme { get; private set; } = false;
         public bool IsViewModel { get; private set; } = false;
         public bool IsPoolApplied { get; private set; } = false;
+        public bool IsHoverApplied { get; private set; } = false;
         public bool IsThemeAttributeExsist { get; private set; } = false;
         public IEnumerable<FieldRoslyn> FieldRoslyns { get; private set; } = [];
 
@@ -315,7 +317,7 @@ namespace MinimalisticWPF.Generator
             {
                 builder.AppendLine($"         {method.Name}();");
             }
-            if (IsDynamicTheme)
+            if (IsHoverApplied)
             {
                 builder.AppendLine($$"""
                          HoveredTransition.TransitionParams.Start += () =>
@@ -363,7 +365,7 @@ namespace MinimalisticWPF.Generator
                 {
                     builder.AppendLine($"         {method.Name}({callParameters});");
                 }
-                if (IsDynamicTheme)
+                if (IsHoverApplied)
                 {
                     builder.AppendLine($$"""
                          HoveredTransition.TransitionParams.Start += () =>
