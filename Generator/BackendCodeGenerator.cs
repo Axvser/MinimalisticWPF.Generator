@@ -93,6 +93,7 @@ namespace MinimalisticWPF.Generator
                         sourceBuilder.AppendLine(classRoslyn.GenerateConstructor());
                         sourceBuilder.AppendLine(classRoslyn.GenerateIPC());
                         sourceBuilder.AppendLine(classRoslyn.GenerateITA());
+                        sourceBuilder.AppendLine(classRoslyn.GenerateIPA());
                         foreach (var fieldRoslyn in classRoslyn.FieldRoslyns)
                         {
                             sourceBuilder.AppendLine(fieldRoslyn.GenerateCode());

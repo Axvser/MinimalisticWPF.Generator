@@ -180,7 +180,7 @@ namespace MinimalisticWPF.Generator
             sourceBuilder.AppendLine();
             var hashUsings = GetReferencedNamespaces(Symbol);
             hashUsings.Add("using MinimalisticWPF;");
-            hashUsings.Add("using MinimalisticWPF.Animator;");
+            hashUsings.Add("using MinimalisticWPF.TransitionSystem;");
             if (IsViewModel)
             {
                 hashUsings.Add("using System.ComponentModel;");
@@ -192,6 +192,7 @@ namespace MinimalisticWPF.Generator
             if (IsPoolApplied)
             {
                 hashUsings.Add("using MinimalisticWPF.StructuralDesign.Pool;");
+                hashUsings.Add("using MinimalisticWPF.ObjectPool;");
             }
             if (IsAop)
             {
