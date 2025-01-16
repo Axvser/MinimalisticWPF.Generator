@@ -156,7 +156,7 @@ namespace MinimalisticWPF.Generator
             sb.AppendLine($"               OnPropertyChanged(nameof({PropertyName}));");
             if (CanInvokeRelease)
             {
-                sb.AppendLine("               if(CanReleased())");
+                sb.AppendLine("               if(CanRelease())");
                 sb.AppendLine("               {");
                 sb.AppendLine("                  Pool.Release(this);");
                 sb.AppendLine("               }");

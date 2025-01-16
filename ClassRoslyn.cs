@@ -242,7 +242,7 @@ namespace MinimalisticWPF.Generator
                 }
                 if (IsPoolApplied)
                 {
-                    list.Add("IPoolApplied;");
+                    list.Add("IPoolApplied");
                 }
                 if (IsDynamicTheme)
                 {

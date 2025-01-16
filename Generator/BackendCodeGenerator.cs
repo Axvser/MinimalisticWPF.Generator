@@ -68,12 +68,9 @@ namespace MinimalisticWPF.Generator
                             var vmsymbol = vmModel.GetDeclaredSymbol(vm);
                             if (vmsymbol != null)
                             {
-                                if (!string.IsNullOrEmpty(classRoslyn.ViewModelValidation))
+                                if (!string.IsNullOrEmpty(classRoslyn.ViewModelValidation) && vmsymbol.ContainingNamespace.ToString() != classRoslyn.ViewModelValidation)
                                 {
-                                    if (vmsymbol.ContainingNamespace.ToString() == classRoslyn.ViewModelValidation)
-                                    {
-
-                                    }
+                                    continue;
                                 }
                                 sourceBuilder.AppendLine(classRoslyn.GenerateUsing(ClassRoslyn.GetReferencedNamespaces(vmsymbol)));
                                 sourceBuilder.AppendLine(classRoslyn.GenerateNamespace());
