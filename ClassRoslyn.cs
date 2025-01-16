@@ -25,6 +25,7 @@ namespace MinimalisticWPF.Generator
             if (vmfields != null)
             {
                 FieldRoslyns = vmfields.Select(field => new FieldRoslyn(field));
+                IsPoolApplied = FieldRoslyns.Any(f => f.CanInvokeRelease);
             }
             ReadContextConfigParams(namedTypeSymbol);
         }
@@ -34,6 +35,7 @@ namespace MinimalisticWPF.Generator
         public bool IsAop { get; private set; } = false;
         public bool IsDynamicTheme { get; private set; } = false;
         public bool IsViewModel { get; private set; } = false;
+        public bool IsPoolApplied { get; private set; } = false;
         public bool IsThemeAttributeExsist { get; private set; } = false;
         public IEnumerable<FieldRoslyn> FieldRoslyns { get; private set; } = [];
 
@@ -152,6 +154,10 @@ namespace MinimalisticWPF.Generator
             {
                 hashUsings.Add("using MinimalisticWPF.StructuralDesign.Theme;");
             }
+            if (IsPoolApplied)
+            {
+                hashUsings.Add("using MinimalisticWPF.StructuralDesign.Pool;");
+            }
             if (IsAop)
             {
                 hashUsings.Add("using MinimalisticWPF.AopInterfaces;");
@@ -182,6 +188,10 @@ namespace MinimalisticWPF.Generator
             if (IsDynamicTheme)
             {
                 hashUsings.Add("using MinimalisticWPF.StructuralDesign.Theme;");
+            }
+            if (IsPoolApplied)
+            {
+                hashUsings.Add("using MinimalisticWPF.StructuralDesign.Pool;");
             }
             if (IsAop)
             {
@@ -228,6 +238,10 @@ namespace MinimalisticWPF.Generator
                 if (IsViewModel)
                 {
                     list.Add("INotifyPropertyChanged");
+                }
+                if (IsPoolApplied)
+                {
+                    list.Add("IPoolApplied;");
                 }
                 if (IsDynamicTheme)
                 {
@@ -395,6 +409,20 @@ namespace MinimalisticWPF.Generator
             sourceBuilder.AppendLine("      public Type? CurrentTheme { get; set; } = null;");
             sourceBuilder.AppendLine("      public partial void OnThemeChanging(Type? oldTheme, Type newTheme);");
             sourceBuilder.AppendLine("      public partial void OnThemeChanged(Type? oldTheme, Type newTheme);");
+            return sourceBuilder.ToString();
+        }
+        public string GenerateIPA()
+        {
+            if (!IsPoolApplied)
+            {
+                return string.Empty;
+            }
+            StringBuilder sourceBuilder = new();
+            sourceBuilder.AppendLine("      public partial void OnReusing();");
+            sourceBuilder.AppendLine("      public partial void OnReused();");
+            sourceBuilder.AppendLine("      public partial bool CanRelease();");
+            sourceBuilder.AppendLine("      public partial void OnReleasing();");
+            sourceBuilder.AppendLine("      public partial void OnReleased();");
             return sourceBuilder.ToString();
         }
         public string GenerateHoverControl()
@@ -579,8 +607,8 @@ namespace MinimalisticWPF.Generator
             {
                 if (IsDynamicTheme && fieldRoslyn.ThemeAttributes.Count > 0)
                 {
-                        sourceBuilder.AppendLine($"             HoveredTransition.SetProperty(b => b.{fieldRoslyn.PropertyName}, {fieldRoslyn.PropertyName}_SelectThemeValue_Hovered(CurrentTheme.Name));");
-                        sourceBuilder.AppendLine($"             NoHoveredTransition.SetProperty(b => b.{fieldRoslyn.PropertyName}, {fieldRoslyn.PropertyName}_SelectThemeValue_NoHovered(CurrentTheme.Name));");
+                    sourceBuilder.AppendLine($"             HoveredTransition.SetProperty(b => b.{fieldRoslyn.PropertyName}, {fieldRoslyn.PropertyName}_SelectThemeValue_Hovered(CurrentTheme.Name));");
+                    sourceBuilder.AppendLine($"             NoHoveredTransition.SetProperty(b => b.{fieldRoslyn.PropertyName}, {fieldRoslyn.PropertyName}_SelectThemeValue_NoHovered(CurrentTheme.Name));");
                 }
             }
             sourceBuilder.AppendLine("         }");

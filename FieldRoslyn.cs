@@ -28,6 +28,7 @@ namespace MinimalisticWPF.Generator
         public int SetterValidation { get; private set; } = 0;
         public bool CanOverride { get; private set; } = false;
         public bool CanHover { get; private set; } = false;
+        public bool CanInvokeRelease { get; private set; } = false;
         public IEnumerable<string> Cascades { get; private set; } = [];
         public string Initial { get; private set; } = string.Empty;
 
@@ -66,9 +67,10 @@ namespace MinimalisticWPF.Generator
                 SetterValidation = (int)attributeData.ConstructorArguments[0].Value!;
                 CanOverride = (bool)attributeData.ConstructorArguments[1].Value!;
                 CanHover = (bool)attributeData.ConstructorArguments[2].Value!;
-                Cascades = attributeData.ConstructorArguments[3].Values
+                CanInvokeRelease = (bool)attributeData.ConstructorArguments[3].Value!;
+                Cascades = attributeData.ConstructorArguments[4].Values
                     .Select(v => (string)v.Value!);
-            }      
+            }
         }
         private static string ParseCascadeName(string value)
         {
@@ -152,6 +154,13 @@ namespace MinimalisticWPF.Generator
             }
             sb.AppendLine($"               On{PropertyName}Changed(oldValue,value);");
             sb.AppendLine($"               OnPropertyChanged(nameof({PropertyName}));");
+            if (CanInvokeRelease)
+            {
+                sb.AppendLine("               if(CanReleased())");
+                sb.AppendLine("               {");
+                sb.AppendLine("                  Pool.Release(this);");
+                sb.AppendLine("               }");
+            }
             if (SetterValidation == 1 || SetterValidation == 2)
             {
                 sb.AppendLine("            }");
