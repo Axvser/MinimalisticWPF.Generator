@@ -152,6 +152,7 @@ namespace MinimalisticWPF.Generator
             }
             if (IsDynamicTheme)
             {
+                hashUsings.Add("using MinimalisticWPF.Theme;");
                 hashUsings.Add("using MinimalisticWPF.StructuralDesign.Theme;");
             }
             if (IsPoolApplied)
@@ -187,6 +188,7 @@ namespace MinimalisticWPF.Generator
             }
             if (IsDynamicTheme)
             {
+                hashUsings.Add("using MinimalisticWPF.Theme;");
                 hashUsings.Add("using MinimalisticWPF.StructuralDesign.Theme;");
             }
             if (IsPoolApplied)
