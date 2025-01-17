@@ -421,8 +421,16 @@ namespace MinimalisticWPF.Generator
             StringBuilder sourceBuilder = new();
             sourceBuilder.AppendLine("      public bool IsThemeChanging { get; set; } = false;");
             sourceBuilder.AppendLine("      public Type? CurrentTheme { get; set; } = null;");
-            sourceBuilder.AppendLine("      public partial void OnThemeChanging(Type? oldTheme, Type newTheme);");
-            sourceBuilder.AppendLine("      public partial void OnThemeChanged(Type? oldTheme, Type newTheme);");
+            sourceBuilder.AppendLine("      public void RunThemeChanging(Type? oldTheme, Type newTheme)");
+            sourceBuilder.AppendLine("      {");
+            sourceBuilder.AppendLine("         OnThemeChanging(oldTheme ,newTheme);");
+            sourceBuilder.AppendLine("      }");
+            sourceBuilder.AppendLine("      public void RunThemeChanged(Type? oldTheme, Type newTheme)");
+            sourceBuilder.AppendLine("      {");
+            sourceBuilder.AppendLine("         OnThemeChanged(oldTheme ,newTheme);");
+            sourceBuilder.AppendLine("      }");
+            sourceBuilder.AppendLine("      partial void OnThemeChanging(Type? oldTheme, Type newTheme);");
+            sourceBuilder.AppendLine("      partial void OnThemeChanged(Type? oldTheme, Type newTheme);");
             return sourceBuilder.ToString();
         }
         public string GenerateIPA()
@@ -432,11 +440,31 @@ namespace MinimalisticWPF.Generator
                 return string.Empty;
             }
             StringBuilder sourceBuilder = new();
-            sourceBuilder.AppendLine("      public partial void OnReusing();");
-            sourceBuilder.AppendLine("      public partial void OnReused();");
-            sourceBuilder.AppendLine("      public partial bool CanRelease();");
-            sourceBuilder.AppendLine("      public partial void OnReleasing();");
-            sourceBuilder.AppendLine("      public partial void OnReleased();");
+            sourceBuilder.AppendLine("      public void RunReusing()");
+            sourceBuilder.AppendLine("      {");
+            sourceBuilder.AppendLine("         OnReusing();");
+            sourceBuilder.AppendLine("      }");
+            sourceBuilder.AppendLine("      public void RunReused()");
+            sourceBuilder.AppendLine("      {");
+            sourceBuilder.AppendLine("         OnReused();");
+            sourceBuilder.AppendLine("      }");
+            sourceBuilder.AppendLine("      public void RunCanRelease()");
+            sourceBuilder.AppendLine("      {");
+            sourceBuilder.AppendLine("         CanRelease();");
+            sourceBuilder.AppendLine("      }");
+            sourceBuilder.AppendLine("      public void RunReleasing()");
+            sourceBuilder.AppendLine("      {");
+            sourceBuilder.AppendLine("         OnReleasing();");
+            sourceBuilder.AppendLine("      }");
+            sourceBuilder.AppendLine("      public void RunReleased()");
+            sourceBuilder.AppendLine("      {");
+            sourceBuilder.AppendLine("         OnReleased();");
+            sourceBuilder.AppendLine("      }");
+            sourceBuilder.AppendLine("      partial void OnReusing();");
+            sourceBuilder.AppendLine("      partial void OnReused();");
+            sourceBuilder.AppendLine("      partial bool CanRelease();");
+            sourceBuilder.AppendLine("      partial void OnReleasing();");
+            sourceBuilder.AppendLine("      partial void OnReleased();");
             return sourceBuilder.ToString();
         }
         public string GenerateHoverControl()
