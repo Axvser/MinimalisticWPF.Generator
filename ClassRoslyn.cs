@@ -448,9 +448,9 @@ namespace MinimalisticWPF.Generator
             sourceBuilder.AppendLine("      {");
             sourceBuilder.AppendLine("         OnReused();");
             sourceBuilder.AppendLine("      }");
-            sourceBuilder.AppendLine("      public void RunCanRelease()");
+            sourceBuilder.AppendLine("      public bool RunCanRelease()");
             sourceBuilder.AppendLine("      {");
-            sourceBuilder.AppendLine("         CanRelease();");
+            sourceBuilder.AppendLine("         return CanRelease();");
             sourceBuilder.AppendLine("      }");
             sourceBuilder.AppendLine("      public void RunReleasing()");
             sourceBuilder.AppendLine("      {");
