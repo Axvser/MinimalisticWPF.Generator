@@ -462,7 +462,7 @@ namespace MinimalisticWPF.Generator
             sourceBuilder.AppendLine("      }");
             sourceBuilder.AppendLine("      partial void OnReusing();");
             sourceBuilder.AppendLine("      partial void OnReused();");
-            sourceBuilder.AppendLine("      partial bool CanRelease();");
+            sourceBuilder.AppendLine("      private partial bool CanRelease();");
             sourceBuilder.AppendLine("      partial void OnReleasing();");
             sourceBuilder.AppendLine("      partial void OnReleased();");
             return sourceBuilder.ToString();
