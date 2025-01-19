@@ -86,7 +86,7 @@ namespace MinimalisticWPF.Generator
                     {
                         sourceBuilder.AppendLine(classRoslyn.GenerateUsing());
                         sourceBuilder.AppendLine(classRoslyn.GenerateNamespace());
-                        sourceBuilder.AppendLine(classRoslyn.GeneratePartialClass());
+                        sourceBuilder.AppendLine(classRoslyn.GeneratePartialClass(ignorePool:true));
                         sourceBuilder.AppendLine(classRoslyn.GenerateConstructor());
                         sourceBuilder.AppendLine(classRoslyn.GenerateIPC());
                         sourceBuilder.AppendLine(classRoslyn.GenerateITA());
@@ -102,7 +102,7 @@ namespace MinimalisticWPF.Generator
                     {
                         sourceBuilder.AppendLine(classRoslyn.GenerateUsing());
                         sourceBuilder.AppendLine(classRoslyn.GenerateNamespace());
-                        sourceBuilder.AppendLine(classRoslyn.GeneratePartialClass(true));
+                        sourceBuilder.AppendLine(classRoslyn.GeneratePartialClass(ignoreTheme:true));
                         sourceBuilder.AppendLine(classRoslyn.GenerateIPA());
                         sourceBuilder.AppendLine(classRoslyn.GenerateEnd());
                         generatedSources[Tuple.Create(classSymbol, classDeclaration)] = sourceBuilder;

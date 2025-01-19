@@ -220,7 +220,7 @@ namespace MinimalisticWPF.Generator
             sourceBuilder.AppendLine("{");
             return sourceBuilder.ToString();
         }
-        public string GeneratePartialClass(bool ignoreTheme = false)
+        public string GeneratePartialClass(bool ignorePool = false, bool ignoreTheme = false)
         {
             StringBuilder sourceBuilder = new();
             string share = $"{Syntax.Modifiers} class {Syntax.Identifier.Text}";
@@ -248,7 +248,7 @@ namespace MinimalisticWPF.Generator
                 {
                     list.Add("INotifyPropertyChanged");
                 }
-                if (IsPoolApplied)
+                if (IsPoolApplied && !ignorePool)
                 {
                     list.Add("IPoolApplied");
                 }
