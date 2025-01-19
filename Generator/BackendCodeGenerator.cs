@@ -73,6 +73,7 @@ namespace MinimalisticWPF.Generator
                                 sourceBuilder.AppendLine(classRoslyn.GenerateUsing(ClassRoslyn.GetReferencedNamespaces(vmsymbol)));
                                 sourceBuilder.AppendLine(classRoslyn.GenerateNamespace());
                                 sourceBuilder.AppendLine(classRoslyn.GeneratePartialClass());
+                                sourceBuilder.AppendLine(classRoslyn.GenerateITA());
                                 sourceBuilder.AppendLine(classRoslyn.GenerateIPA());
                                 var vmclassRoslyn = new ClassRoslyn(vm, vmsymbol);
                                 sourceBuilder.AppendLine(vmclassRoslyn.GenerateDependencyProperties(classRoslyn.Symbol.ContainingNamespace.ToString() + '.' + classRoslyn.Syntax.Identifier.Text, vmsymbol.ContainingNamespace.ToString(), classRoslyn.ViewModelTypeName));
@@ -86,7 +87,7 @@ namespace MinimalisticWPF.Generator
                     {
                         sourceBuilder.AppendLine(classRoslyn.GenerateUsing());
                         sourceBuilder.AppendLine(classRoslyn.GenerateNamespace());
-                        sourceBuilder.AppendLine(classRoslyn.GeneratePartialClass(ignorePool:true));
+                        sourceBuilder.AppendLine(classRoslyn.GeneratePartialClass(ignorePool: true));
                         sourceBuilder.AppendLine(classRoslyn.GenerateConstructor());
                         sourceBuilder.AppendLine(classRoslyn.GenerateIPC());
                         sourceBuilder.AppendLine(classRoslyn.GenerateITA());
@@ -98,11 +99,12 @@ namespace MinimalisticWPF.Generator
                         sourceBuilder.AppendLine(classRoslyn.GenerateEnd());
                         generatedSources[Tuple.Create(classSymbol, classDeclaration)] = sourceBuilder;
                     }
-                    else if (!classRoslyn.IsViewModel && !classRoslyn.IsContextConfig)
+                    else
                     {
                         sourceBuilder.AppendLine(classRoslyn.GenerateUsing());
                         sourceBuilder.AppendLine(classRoslyn.GenerateNamespace());
-                        sourceBuilder.AppendLine(classRoslyn.GeneratePartialClass(ignoreTheme:true));
+                        sourceBuilder.AppendLine(classRoslyn.GeneratePartialClass(ignoreViewModel: true));
+                        sourceBuilder.AppendLine(classRoslyn.GenerateITA());
                         sourceBuilder.AppendLine(classRoslyn.GenerateIPA());
                         sourceBuilder.AppendLine(classRoslyn.GenerateEnd());
                         generatedSources[Tuple.Create(classSymbol, classDeclaration)] = sourceBuilder;

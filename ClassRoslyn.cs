@@ -220,18 +220,36 @@ namespace MinimalisticWPF.Generator
             sourceBuilder.AppendLine("{");
             return sourceBuilder.ToString();
         }
-        public string GeneratePartialClass(bool ignorePool = false, bool ignoreTheme = false)
+        public string GeneratePartialClass(bool ignoreViewModel = false, bool ignorePool = false, bool ignoreTheme = false)
         {
             StringBuilder sourceBuilder = new();
             string share = $"{Syntax.Modifiers} class {Syntax.Identifier.Text}";
 
-            if (IsContextConfig)
+            var list = new List<string>();
+            if (IsAop)
             {
+                list.Add(AnalizeHelper.GetInterfaceName(Syntax));
+            }
+            if (IsViewModel && !ignoreViewModel)
+            {
+                list.Add("INotifyPropertyChanged");
+            }
+            if (IsPoolApplied && !ignorePool)
+            {
+                list.Add("IPoolApplied");
+            }
+            if (IsDynamicTheme && !ignoreTheme)
+            {
+                list.Add("IThemeApplied");
+            }
+            if (list.Count > 0)
+            {
+                var result = string.Join(", ", list);
                 var source = $$"""
-                              {{share}}
+                              {{share}} : {{result}}
                               {
                            """;
-                if (IsDynamicTheme && !IsThemeAttributeExsist)
+                if (IsDynamicTheme && !IsThemeAttributeExsist && !ignoreTheme)
                 {
                     sourceBuilder.AppendLine("   [DynamicTheme]");
                 }
@@ -239,48 +257,15 @@ namespace MinimalisticWPF.Generator
             }
             else
             {
-                var list = new List<string>();
-                if (IsAop)
-                {
-                    list.Add(AnalizeHelper.GetInterfaceName(Syntax));
-                }
-                if (IsViewModel)
-                {
-                    list.Add("INotifyPropertyChanged");
-                }
-                if (IsPoolApplied && !ignorePool)
-                {
-                    list.Add("IPoolApplied");
-                }
-                if (IsDynamicTheme && !ignoreTheme)
-                {
-                    list.Add("IThemeApplied");
-                }
-                if (list.Count > 0)
-                {
-                    var result = string.Join(", ", list);
-                    var source = $$"""
-                              {{share}} : {{result}}
-                              {
-                           """;
-                    if (IsDynamicTheme && !IsThemeAttributeExsist)
-                    {
-                        sourceBuilder.AppendLine("   [DynamicTheme]");
-                    }
-                    sourceBuilder.AppendLine(source);
-                }
-                else
-                {
-                    var source = $$"""
+                var source = $$"""
                               {{share}}
                               {
                            """;
-                    if (IsDynamicTheme && !IsThemeAttributeExsist)
-                    {
-                        sourceBuilder.AppendLine("   [DynamicTheme]");
-                    }
-                    sourceBuilder.AppendLine(source);
+                if (IsDynamicTheme && !IsThemeAttributeExsist && !ignoreTheme)
+                {
+                    sourceBuilder.AppendLine("   [DynamicTheme]");
                 }
+                sourceBuilder.AppendLine(source);
             }
 
             return sourceBuilder.ToString();
