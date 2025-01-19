@@ -727,8 +727,8 @@ namespace MinimalisticWPF.Generator
                                       nameof({{themeText}}Hovered{{fieldRoslyn.PropertyName}}),
                                       typeof({{fieldRoslyn.TypeName}}),
                                       typeof({{localTypeName}}),
-                                      new PropertyMetadata({{fieldRoslyn.Initial.InitialTextParse()}}, On{{themeText}}Hovered{{fieldRoslyn.PropertyName}}Changed));   
-                                   public static void On{{themeText}}Hovered{{fieldRoslyn.PropertyName}}Changed(DependencyObject d, DependencyPropertyChangedEventArgs e)
+                                      new PropertyMetadata({{fieldRoslyn.Initial.InitialTextParse()}}, _innerRun{{themeText}}Hovered{{fieldRoslyn.PropertyName}}Changed));   
+                                   public static void _innerRun{{themeText}}Hovered{{fieldRoslyn.PropertyName}}Changed(DependencyObject d, DependencyPropertyChangedEventArgs e)
                                    {
                                       if (d is {{localTypeName}} control && control.DataContext is {{typeNameSpace}}.{{typeName}} viewModel)
                                       {
@@ -747,8 +747,8 @@ namespace MinimalisticWPF.Generator
                                       nameof({{themeText}}NoHovered{{fieldRoslyn.PropertyName}}),
                                       typeof({{fieldRoslyn.TypeName}}),
                                       typeof({{localTypeName}}),
-                                      new PropertyMetadata({{fieldRoslyn.Initial.InitialTextParse()}}, On{{themeText}}NoHovered{{fieldRoslyn.PropertyName}}Changed));   
-                                   public static void On{{themeText}}NoHovered{{fieldRoslyn.PropertyName}}Changed(DependencyObject d, DependencyPropertyChangedEventArgs e)
+                                      new PropertyMetadata({{fieldRoslyn.Initial.InitialTextParse()}}, _innerRun{{themeText}}NoHovered{{fieldRoslyn.PropertyName}}Changed));   
+                                   public static void _innerRun{{themeText}}NoHovered{{fieldRoslyn.PropertyName}}Changed(DependencyObject d, DependencyPropertyChangedEventArgs e)
                                    {
                                       if (d is {{localTypeName}} control && control.DataContext is {{typeNameSpace}}.{{typeName}} viewModel)
                                       {
@@ -771,8 +771,8 @@ namespace MinimalisticWPF.Generator
                                       nameof(Hovered{{fieldRoslyn.PropertyName}}),
                                       typeof({{fieldRoslyn.TypeName}}),
                                       typeof({{localTypeName}}),
-                                      new PropertyMetadata({{fieldRoslyn.Initial.InitialTextParse()}}, OnHovered{{fieldRoslyn.PropertyName}}Changed));   
-                                   private static void OnHovered{{fieldRoslyn.PropertyName}}Changed(DependencyObject d, DependencyPropertyChangedEventArgs e)
+                                      new PropertyMetadata({{fieldRoslyn.Initial.InitialTextParse()}}, _innerRunHovered{{fieldRoslyn.PropertyName}}Changed));   
+                                   private static void _innerRunHovered{{fieldRoslyn.PropertyName}}Changed(DependencyObject d, DependencyPropertyChangedEventArgs e)
                                    {
                                       if (d is {{localTypeName}} control && control.DataContext is {{typeNameSpace}}.{{typeName}} viewModel)
                                       {
@@ -791,8 +791,8 @@ namespace MinimalisticWPF.Generator
                                       nameof(NoHovered{{fieldRoslyn.PropertyName}}),
                                       typeof({{fieldRoslyn.TypeName}}),
                                       typeof({{localTypeName}}),
-                                      new PropertyMetadata({{fieldRoslyn.Initial.InitialTextParse()}}, OnNoHovered{{fieldRoslyn.PropertyName}}Changed));   
-                                   private static void OnNoHovered{{fieldRoslyn.PropertyName}}Changed(DependencyObject d, DependencyPropertyChangedEventArgs e)
+                                      new PropertyMetadata({{fieldRoslyn.Initial.InitialTextParse()}}, _innerRunNoHovered{{fieldRoslyn.PropertyName}}Changed));   
+                                   private static void _innerRunNoHovered{{fieldRoslyn.PropertyName}}Changed(DependencyObject d, DependencyPropertyChangedEventArgs e)
                                    {
                                       if (d is {{localTypeName}} control && control.DataContext is {{typeNameSpace}}.{{typeName}} viewModel)
                                       {
@@ -833,7 +833,7 @@ namespace MinimalisticWPF.Generator
                                       if (d is {{localTypeName}} control && control.DataContext is {{typeNameSpace}}.{{typeName}} viewModel)
                                       {
                                          viewModel.{{fieldRoslyn.PropertyName}} = ({{fieldRoslyn.TypeName}})e.NewValue;
-                                         viewModel._inner{{fieldRoslyn.PropertyName}}Changed(({{fieldRoslyn.TypeName}})e.OldValue ,({{fieldRoslyn.TypeName}})e.NewValue);
+                                         control._inner{{fieldRoslyn.PropertyName}}Changed(({{fieldRoslyn.TypeName}})e.OldValue ,({{fieldRoslyn.TypeName}})e.NewValue);
                                       }
                                    }
                                    public void _inner{{fieldRoslyn.PropertyName}}Changed({{fieldRoslyn.TypeName}} oldValue, {{fieldRoslyn.TypeName}} newValue)
