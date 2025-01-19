@@ -18,7 +18,6 @@ namespace MinimalisticWPF.Generator
             ThemeAttributes = GetThemeAttributesTexts(fieldSymbol);
             Initial = GetInitializerText(fieldSymbol);
             ReadObservableParams(fieldSymbol);
-            CanDependency = AnalizeHelper.FindAttribute(fieldSymbol, "DependencyAttribute");
         }
 
         public IFieldSymbol Symbol { get; private set; }
@@ -30,7 +29,7 @@ namespace MinimalisticWPF.Generator
         public bool CanOverride { get; private set; } = false;
         public bool CanHover { get; private set; } = false;
         public bool CanInvokeRelease { get; private set; } = false;
-        public bool CanDependency {  get; private set; } = false;
+        public bool CanDependency { get; private set; } = false;
         public IEnumerable<string> Cascades { get; private set; } = [];
         public string Initial { get; private set; } = string.Empty;
 
@@ -70,7 +69,8 @@ namespace MinimalisticWPF.Generator
                 CanOverride = (bool)attributeData.ConstructorArguments[1].Value!;
                 CanHover = (bool)attributeData.ConstructorArguments[2].Value!;
                 CanInvokeRelease = (bool)attributeData.ConstructorArguments[3].Value!;
-                Cascades = attributeData.ConstructorArguments[4].Values
+                CanDependency = (bool)attributeData.ConstructorArguments[4].Value!;
+                Cascades = attributeData.ConstructorArguments[5].Values
                     .Select(v => (string)v.Value!);
             }
         }
