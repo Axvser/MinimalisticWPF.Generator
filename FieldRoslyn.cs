@@ -7,7 +7,7 @@ using System.Text;
 
 namespace MinimalisticWPF.Generator
 {
-    public class FieldRoslyn
+    internal class FieldRoslyn
     {
         internal FieldRoslyn(IFieldSymbol fieldSymbol)
         {
@@ -18,6 +18,7 @@ namespace MinimalisticWPF.Generator
             ThemeAttributes = GetThemeAttributesTexts(fieldSymbol);
             Initial = GetInitializerText(fieldSymbol);
             ReadObservableParams(fieldSymbol);
+            CanDependency = AnalizeHelper.FindAttribute(fieldSymbol, "DependencyAttribute");
         }
 
         public IFieldSymbol Symbol { get; private set; }
@@ -29,6 +30,7 @@ namespace MinimalisticWPF.Generator
         public bool CanOverride { get; private set; } = false;
         public bool CanHover { get; private set; } = false;
         public bool CanInvokeRelease { get; private set; } = false;
+        public bool CanDependency {  get; private set; } = false;
         public IEnumerable<string> Cascades { get; private set; } = [];
         public string Initial { get; private set; } = string.Empty;
 

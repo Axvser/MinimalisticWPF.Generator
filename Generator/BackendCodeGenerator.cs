@@ -77,6 +77,7 @@ namespace MinimalisticWPF.Generator
                                 sourceBuilder.AppendLine(classRoslyn.GeneratePartialClass());
                                 var vmclassRoslyn = new ClassRoslyn(vm, vmsymbol);
                                 sourceBuilder.AppendLine(vmclassRoslyn.GenerateDependencyProperties(classRoslyn.Symbol.ContainingNamespace.ToString() + '.' + classRoslyn.Syntax.Identifier.Text, vmsymbol.ContainingNamespace.ToString(), classRoslyn.ViewModelTypeName));
+                                sourceBuilder.AppendLine(vmclassRoslyn.GenerateHoverDependencyProperties(classRoslyn.Symbol.ContainingNamespace.ToString() + '.' + classRoslyn.Syntax.Identifier.Text, vmsymbol.ContainingNamespace.ToString(), classRoslyn.ViewModelTypeName));
                                 sourceBuilder.AppendLine(classRoslyn.GenerateEnd());
                                 generatedSources[Tuple.Create(classSymbol, classDeclaration)] = sourceBuilder;
                             }

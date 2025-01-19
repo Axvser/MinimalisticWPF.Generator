@@ -8,7 +8,7 @@ using System.Text;
 
 namespace MinimalisticWPF.Generator
 {
-    public class ClassRoslyn
+    internal class ClassRoslyn
     {
         internal ClassRoslyn(ClassDeclarationSyntax classDeclarationSyntax, INamedTypeSymbol namedTypeSymbol)
         {
@@ -704,7 +704,7 @@ namespace MinimalisticWPF.Generator
 
             return sourceBuilder.ToString();
         }
-        public string GenerateDependencyProperties(string localTypeName, string typeNameSpace, string typeName)
+        public string GenerateHoverDependencyProperties(string localTypeName, string typeNameSpace, string typeName)
         {
             var hoverables = FieldRoslyns.Where(fr => fr.CanHover).ToArray();
 
@@ -808,6 +808,41 @@ namespace MinimalisticWPF.Generator
 
             return sourceBuilder.ToString();
         }
+        public string GenerateDependencyProperties(string localTypeName, string typeNameSpace, string typeName)
+        {
+            var dependencies = FieldRoslyns.Where(fr => fr.CanDependency).ToArray();
+
+            var sourceBuilder = new StringBuilder();
+
+            foreach(var fieldRoslyn in dependencies)
+            {
+                sourceBuilder.AppendLine($$"""
+                                   public {{fieldRoslyn.TypeName}} {{fieldRoslyn.PropertyName}}
+                                   {
+                                      get => ({{fieldRoslyn.TypeName}})((({{typeNameSpace}}.{{typeName}})DataContext).{{fieldRoslyn.PropertyName}});
+                                      set => SetValue({{fieldRoslyn.PropertyName}}Property, value);
+                                   }
+                                   public static readonly DependencyProperty {{fieldRoslyn.PropertyName}}Property =
+                                      DependencyProperty.Register(
+                                      nameof({{fieldRoslyn.PropertyName}}),
+                                      typeof({{fieldRoslyn.TypeName}}),
+                                      typeof({{localTypeName}}),
+                                      new PropertyMetadata({{fieldRoslyn.Initial.InitialTextParse()}}, Run{{fieldRoslyn.PropertyName}}Changed));   
+                                   private static void Run{{fieldRoslyn.PropertyName}}Changed(DependencyObject d, DependencyPropertyChangedEventArgs e)
+                                   {
+                                      if (d is {{localTypeName}} control && control.DataContext is {{typeNameSpace}}.{{typeName}} viewModel)
+                                      {
+                                         viewModel.{{fieldRoslyn.PropertyName}} = ({{fieldRoslyn.TypeName}})e.NewValue;
+                                         viewModel.On{{fieldRoslyn.PropertyName}}Changed(control ,({{fieldRoslyn.TypeName}})e.OldValue ,({{fieldRoslyn.TypeName}})e.NewValue);
+                                      }
+                                   }
+                                   partial void On{{fieldRoslyn.PropertyName}}Changed({{fieldRoslyn.TypeName}} oldValue, {{fieldRoslyn.TypeName}} newValue);
+                            """);
+            }
+
+            return sourceBuilder.ToString();
+        }
+
         public string GenerateEnd()
         {
             StringBuilder sourceBuilder = new();

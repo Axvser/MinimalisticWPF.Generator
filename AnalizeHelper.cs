@@ -22,6 +22,27 @@ namespace MinimalisticWPF.Generator
                     .SelectMany(al => al.Attributes)
                     .Any(attr => attr.Name.ToString() == "AspectOriented"));
         }
+        internal static bool FindAttribute(ClassDeclarationSyntax classDecl, string attributeName)
+        {
+            return classDecl.Members
+                .OfType<MemberDeclarationSyntax>()
+                .Any(member => member.AttributeLists
+                    .SelectMany(al => al.Attributes)
+                    .Any(attr => attr.Name.ToString() == attributeName));
+        }
+        internal static bool FindAttribute(IFieldSymbol fieldSymbol, string attributeName)
+        {
+            foreach (var attribute in fieldSymbol.GetAttributes())
+            {
+                if (attribute.AttributeClass == null) continue;
+
+                if (attribute.AttributeClass.AllInterfaces.Any(i => i.Name == attributeName))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
 
         internal static ClassDeclarationSyntax GetClassDeclaration(GeneratorSyntaxContext context)
         {
