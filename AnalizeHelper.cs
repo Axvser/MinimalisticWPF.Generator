@@ -82,7 +82,14 @@ namespace MinimalisticWPF.Generator
         }
         internal static string GetPropertyNameByFieldName(VariableDeclaratorSyntax variable)
         {
-            return char.ToUpper(variable.Identifier.Text[1]) + variable.Identifier.Text.Substring(2);
+            if (variable.Identifier.Text.StartsWith("_"))
+            {
+                return char.ToUpper(variable.Identifier.Text[1]) + variable.Identifier.Text.Substring(2);
+            }
+            else
+            {
+                return char.ToUpper(variable.Identifier.Text[0]) + variable.Identifier.Text.Substring(1);
+            }
         }
         internal static string InitialTextParse(this string source)
         {

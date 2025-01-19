@@ -22,11 +22,13 @@ namespace MinimalisticWPF.Generator
                 .Any(att => att.AttributeClass?.Name == "DynamicThemeAttribute");
             IsAop = AnalizeHelper.IsAopClass(classDeclarationSyntax);
             IsViewModel = IsObservableFieldExist(namedTypeSymbol, out var vmfields);
+            IsPoolApplied = namedTypeSymbol
+                .GetAttributes()
+                .Any(att => att.AttributeClass?.Name == "ObjectPoolAttribute");
             if (vmfields != null)
             {
                 FieldRoslyns = vmfields.Select(field => new FieldRoslyn(field));
                 IsHoverApplied = FieldRoslyns.Any(f => f.CanHover);
-                IsPoolApplied = FieldRoslyns.Any(f => f.CanInvokeRelease);
             }
             ReadContextConfigParams(namedTypeSymbol);
         }
@@ -218,7 +220,7 @@ namespace MinimalisticWPF.Generator
             sourceBuilder.AppendLine("{");
             return sourceBuilder.ToString();
         }
-        public string GeneratePartialClass()
+        public string GeneratePartialClass(bool ignoreTheme = false)
         {
             StringBuilder sourceBuilder = new();
             string share = $"{Syntax.Modifiers} class {Syntax.Identifier.Text}";
@@ -250,7 +252,7 @@ namespace MinimalisticWPF.Generator
                 {
                     list.Add("IPoolApplied");
                 }
-                if (IsDynamicTheme)
+                if (IsDynamicTheme && !ignoreTheme)
                 {
                     list.Add("IThemeApplied");
                 }
@@ -814,7 +816,7 @@ namespace MinimalisticWPF.Generator
 
             var sourceBuilder = new StringBuilder();
 
-            foreach(var fieldRoslyn in dependencies)
+            foreach (var fieldRoslyn in dependencies)
             {
                 sourceBuilder.AppendLine($$"""
                                    public {{fieldRoslyn.TypeName}} {{fieldRoslyn.PropertyName}}
