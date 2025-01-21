@@ -566,6 +566,7 @@ namespace MinimalisticWPF.Generator
                         sourceBuilder.AppendLine("         {");
                         sourceBuilder.AppendLine($"            var oldValue = _{themeText}NoHovered{fieldRoslyn.PropertyName};");
                         sourceBuilder.AppendLine($"            _{themeText}NoHovered{fieldRoslyn.PropertyName} = value;");
+                        sourceBuilder.AppendLine($"            DynamicTheme.SetThemeValue(typeof({Syntax.Identifier.Text}) ,typeof({fieldRoslyn.TypeName}) , nameof({fieldRoslyn.PropertyName}) ,value);");
                         sourceBuilder.AppendLine($$"""
                                         if(CurrentTheme == typeof({{themeText}}))
                                         {
