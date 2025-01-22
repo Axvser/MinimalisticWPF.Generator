@@ -804,6 +804,38 @@ namespace MinimalisticWPF.Generator
 
             foreach (var fieldRoslyn in dependencies)
             {
+                if (fieldRoslyn.ThemeAttributes.Count > 0 && !fieldRoslyn.CanHover)
+                {
+                    foreach (var attName in fieldRoslyn.ThemeAttributes)
+                    {
+                        sourceBuilder.AppendLine($$"""
+                                   public {{fieldRoslyn.TypeName}} {{attName}}{{fieldRoslyn.PropertyName}}
+                                   {
+                                      get => ({{fieldRoslyn.TypeName}})((({{typeNameSpace}}.{{typeName}})DataContext).{{attName}}{{fieldRoslyn.PropertyName}});
+                                      set => SetValue({{attName}}{{fieldRoslyn.PropertyName}}Property, value);
+                                   }
+                                   public static readonly DependencyProperty {{attName}}{{fieldRoslyn.PropertyName}}Property =
+                                      DependencyProperty.Register(
+                                      nameof({{attName}}{{fieldRoslyn.PropertyName}}),
+                                      typeof({{fieldRoslyn.TypeName}}),
+                                      typeof({{localTypeName}}),
+                                      new PropertyMetadata({{fieldRoslyn.Initial.InitialTextParse()}}, _innerRun{{attName}}{{fieldRoslyn.PropertyName}}Changed));   
+                                   public static void _innerRun{{attName}}{{fieldRoslyn.PropertyName}}Changed(DependencyObject d, DependencyPropertyChangedEventArgs e)
+                                   {
+                                      if (d is {{localTypeName}} control && control.DataContext is {{typeNameSpace}}.{{typeName}} viewModel)
+                                      {
+                                         DynamicTheme.SetThemeValue(typeof({{typeNameSpace}}.{{typeName}}), typeof({{attName}}), nameof({{fieldRoslyn.PropertyName}}), newValue);
+                                         control._inner{{attName}}{{fieldRoslyn.PropertyName}}Changed(({{fieldRoslyn.TypeName}})e.OldValue ,({{fieldRoslyn.TypeName}})e.NewValue);
+                                      }
+                                   }
+                                   public void _inner{{attName}}{{fieldRoslyn.PropertyName}}Changed({{fieldRoslyn.TypeName}} oldValue, {{fieldRoslyn.TypeName}} newValue)
+                                   {
+                                      On{{attName}}{{fieldRoslyn.PropertyName}}Changed(oldValue ,newValue);
+                                   }
+                                   partial void On{{attName}}{{fieldRoslyn.PropertyName}}Changed({{fieldRoslyn.TypeName}} oldValue, {{fieldRoslyn.TypeName}} newValue);
+                            """);
+                    }
+                }
                 sourceBuilder.AppendLine($$"""
                                    public {{fieldRoslyn.TypeName}} {{fieldRoslyn.PropertyName}}
                                    {
@@ -834,7 +866,6 @@ namespace MinimalisticWPF.Generator
 
             return sourceBuilder.ToString();
         }
-
         public string GenerateEnd()
         {
             StringBuilder sourceBuilder = new();
