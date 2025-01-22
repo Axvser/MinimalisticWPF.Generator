@@ -149,6 +149,7 @@ namespace MinimalisticWPF.Generator
             sourceBuilder.AppendLine();
             var hashUsings = GetReferencedNamespaces(Symbol);
             hashUsings.Add("using MinimalisticWPF;");
+            hashUsings.Add("using MinimalisticWPF.Theme;");
             hashUsings.Add("using MinimalisticWPF.Extension;");
             hashUsings.Add("using MinimalisticWPF.TransitionSystem;");
             if (IsViewModel)
@@ -157,7 +158,6 @@ namespace MinimalisticWPF.Generator
             }
             if (IsDynamicTheme)
             {
-                hashUsings.Add("using MinimalisticWPF.Theme;");
                 hashUsings.Add("using MinimalisticWPF.StructuralDesign.Theme;");
             }
             if (IsPoolApplied)
@@ -186,6 +186,7 @@ namespace MinimalisticWPF.Generator
             sourceBuilder.AppendLine();
             var hashUsings = GetReferencedNamespaces(Symbol);
             hashUsings.Add("using MinimalisticWPF;");
+            hashUsings.Add("using MinimalisticWPF.Theme;");
             hashUsings.Add("using MinimalisticWPF.Extension;");
             hashUsings.Add("using MinimalisticWPF.TransitionSystem;");
             if (IsViewModel)
@@ -194,7 +195,6 @@ namespace MinimalisticWPF.Generator
             }
             if (IsDynamicTheme)
             {
-                hashUsings.Add("using MinimalisticWPF.Theme;");
                 hashUsings.Add("using MinimalisticWPF.StructuralDesign.Theme;");
             }
             if (IsPoolApplied)
