@@ -806,7 +806,7 @@ namespace MinimalisticWPF.Generator
             {
                 if (fieldRoslyn.ThemeAttributes.Count > 0 && !fieldRoslyn.CanHover)
                 {
-                    foreach (var attName in fieldRoslyn.ThemeAttributes)
+                    foreach (var attName in fieldRoslyn.ThemeAttributes.Select(t => t.Split('(')[0]))
                     {
                         sourceBuilder.AppendLine($$"""
                                    public {{fieldRoslyn.TypeName}} {{attName}}{{fieldRoslyn.PropertyName}}
