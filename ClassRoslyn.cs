@@ -707,7 +707,7 @@ namespace MinimalisticWPF.Generator
                         sourceBuilder.AppendLine($$"""
                                    public {{fieldRoslyn.TypeName}} {{themeText}}Hovered{{fieldRoslyn.PropertyName}}
                                    {
-                                      get => ({{fieldRoslyn.TypeName}})((({{typeNameSpace}}.{{typeName}})DataContext).{{themeText}}Hovered{{fieldRoslyn.PropertyName}});
+                                      get => ({{fieldRoslyn.TypeName}})GetValue({{themeText}}Hovered{{fieldRoslyn.PropertyName}}Property);
                                       set => SetValue({{themeText}}Hovered{{fieldRoslyn.PropertyName}}Property, value);
                                    }
                                    public static readonly DependencyProperty {{themeText}}Hovered{{fieldRoslyn.PropertyName}}Property =
@@ -727,7 +727,7 @@ namespace MinimalisticWPF.Generator
                         sourceBuilder.AppendLine($$"""
                                    public {{fieldRoslyn.TypeName}} {{themeText}}NoHovered{{fieldRoslyn.PropertyName}}
                                    {
-                                      get => ({{fieldRoslyn.TypeName}})((({{typeNameSpace}}.{{typeName}})DataContext).{{themeText}}NoHovered{{fieldRoslyn.PropertyName}});
+                                      get => ({{fieldRoslyn.TypeName}})GetValue({{themeText}}NoHovered{{fieldRoslyn.PropertyName}}Property);
                                       set => SetValue({{themeText}}NoHovered{{fieldRoslyn.PropertyName}}Property, value);
                                    }
                                    public static readonly DependencyProperty {{themeText}}NoHovered{{fieldRoslyn.PropertyName}}Property =
@@ -751,7 +751,7 @@ namespace MinimalisticWPF.Generator
                     sourceBuilder.AppendLine($$"""
                                    public {{fieldRoslyn.TypeName}} Hovered{{fieldRoslyn.PropertyName}}
                                    {
-                                      get => ({{fieldRoslyn.TypeName}})((({{typeNameSpace}}.{{typeName}})DataContext).Hovered{{fieldRoslyn.PropertyName}});
+                                      get => ({{fieldRoslyn.TypeName}})GetValue(Hovered{{fieldRoslyn.PropertyName}}Property);
                                       set => SetValue(Hovered{{fieldRoslyn.PropertyName}}Property, value);
                                    }
                                    public static readonly DependencyProperty Hovered{{fieldRoslyn.PropertyName}}Property =
@@ -771,7 +771,7 @@ namespace MinimalisticWPF.Generator
                     sourceBuilder.AppendLine($$"""
                                    public {{fieldRoslyn.TypeName}} NoHovered{{fieldRoslyn.PropertyName}}
                                    {
-                                      get => ({{fieldRoslyn.TypeName}})((({{typeNameSpace}}.{{typeName}})DataContext).NoHovered{{fieldRoslyn.PropertyName}});
+                                      get => ({{fieldRoslyn.TypeName}})GetValue(Hovered{{fieldRoslyn.PropertyName}}Property);
                                       set => SetValue(NoHovered{{fieldRoslyn.PropertyName}}Property, value);
                                    }
                                    public static readonly DependencyProperty NoHovered{{fieldRoslyn.PropertyName}}Property =
@@ -811,7 +811,7 @@ namespace MinimalisticWPF.Generator
                         sourceBuilder.AppendLine($$"""
                                    public {{fieldRoslyn.TypeName}} {{attName}}{{fieldRoslyn.PropertyName}}
                                    {
-                                      get => ({{fieldRoslyn.TypeName}})((({{typeNameSpace}}.{{typeName}})DataContext).{{attName}}{{fieldRoslyn.PropertyName}});
+                                      get => ({{fieldRoslyn.TypeName}})GetValue({{attName}}{{fieldRoslyn.PropertyName}}Property);
                                       set => SetValue({{attName}}{{fieldRoslyn.PropertyName}}Property, value);
                                    }
                                    public static readonly DependencyProperty {{attName}}{{fieldRoslyn.PropertyName}}Property =
@@ -839,7 +839,7 @@ namespace MinimalisticWPF.Generator
                 sourceBuilder.AppendLine($$"""
                                    public {{fieldRoslyn.TypeName}} {{fieldRoslyn.PropertyName}}
                                    {
-                                      get => ({{fieldRoslyn.TypeName}})((({{typeNameSpace}}.{{typeName}})DataContext).{{fieldRoslyn.PropertyName}});
+                                      get => ({{fieldRoslyn.TypeName}})GetValue({{fieldRoslyn.PropertyName}}Property);
                                       set => SetValue({{fieldRoslyn.PropertyName}}Property, value);
                                    }
                                    public static readonly DependencyProperty {{fieldRoslyn.PropertyName}}Property =
