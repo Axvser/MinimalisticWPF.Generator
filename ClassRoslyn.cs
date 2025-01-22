@@ -825,7 +825,7 @@ namespace MinimalisticWPF.Generator
                                       if (d is {{localTypeName}} control && control.DataContext is {{typeNameSpace}}.{{typeName}} viewModel)
                                       {
                                          DynamicTheme.SetThemeValue(typeof({{typeNameSpace}}.{{typeName}}), typeof({{attName}}), nameof({{fieldRoslyn.PropertyName}}), ({{fieldRoslyn.TypeName}})e.NewValue);
-                                         if(viewModel is MinimalisticWPF.StructuralDesign.Theme.IThemeApplied theme && theme.CurrentTheme?.Name == {{attName}})
+                                         if(viewModel is MinimalisticWPF.StructuralDesign.Theme.IThemeApplied theme && theme.CurrentTheme?.Name == "{{attName}}")
                                          {
                                             viewModel.{{fieldRoslyn.PropertyName}} = ({{fieldRoslyn.TypeName}})e.NewValue;
                                          }
