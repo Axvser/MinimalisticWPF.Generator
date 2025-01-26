@@ -566,7 +566,6 @@ namespace MinimalisticWPF.Generator
                         sourceBuilder.AppendLine("         {");
                         sourceBuilder.AppendLine($"            var oldValue = _{themeText}NoHovered{fieldRoslyn.PropertyName};");
                         sourceBuilder.AppendLine($"            _{themeText}NoHovered{fieldRoslyn.PropertyName} = value;");
-                        sourceBuilder.AppendLine($"            DynamicTheme.SetThemeValue(typeof({Syntax.Identifier.Text}) ,typeof({fieldRoslyn.TypeName}) , nameof({fieldRoslyn.PropertyName}) ,value);");
                         sourceBuilder.AppendLine($$"""
                                         if(CurrentTheme == typeof({{themeText}}))
                                         {
@@ -824,7 +823,6 @@ namespace MinimalisticWPF.Generator
                                    {
                                       if (d is {{localTypeName}} control && control.DataContext is {{typeNameSpace}}.{{typeName}} viewModel)
                                       {
-                                         DynamicTheme.SetThemeValue(typeof({{typeNameSpace}}.{{typeName}}), typeof({{attName}}), nameof({{fieldRoslyn.PropertyName}}), ({{fieldRoslyn.TypeName}})e.NewValue);
                                          if(viewModel is MinimalisticWPF.StructuralDesign.Theme.IThemeApplied theme && theme.CurrentTheme?.Name == "{{attName}}")
                                          {
                                             viewModel.{{fieldRoslyn.PropertyName}} = ({{fieldRoslyn.TypeName}})e.NewValue;
