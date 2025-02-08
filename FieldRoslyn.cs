@@ -138,7 +138,7 @@ namespace MinimalisticWPF.Generator
             switch (SetterValidation)
             {
                 case 1:
-                    sb.AppendLine($"            if(value != {FieldName})");
+                    sb.AppendLine($"            if(!{FieldName}.Equals(value))");
                     sb.AppendLine("            {");
                     break;
                 case 2:
