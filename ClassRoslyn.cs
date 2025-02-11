@@ -150,7 +150,6 @@ namespace MinimalisticWPF.Generator
             var hashUsings = GetReferencedNamespaces(Symbol);
             hashUsings.Add("using MinimalisticWPF;");
             hashUsings.Add("using MinimalisticWPF.Theme;");
-            hashUsings.Add("using MinimalisticWPF.Extension;");
             hashUsings.Add("using MinimalisticWPF.TransitionSystem;");
             if (IsViewModel)
             {
@@ -187,7 +186,6 @@ namespace MinimalisticWPF.Generator
             var hashUsings = GetReferencedNamespaces(Symbol);
             hashUsings.Add("using MinimalisticWPF;");
             hashUsings.Add("using MinimalisticWPF.Theme;");
-            hashUsings.Add("using MinimalisticWPF.Extension;");
             hashUsings.Add("using MinimalisticWPF.TransitionSystem;");
             if (IsViewModel)
             {
