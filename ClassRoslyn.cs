@@ -812,7 +812,7 @@ namespace MinimalisticWPF.Generator
 
             foreach (var fieldRoslyn in dependencies)
             {
-                if (fieldRoslyn.ThemeAttributes.Count > 0 && !fieldRoslyn.CanHover)
+                if (fieldRoslyn.ThemeAttributes.Count > 0)
                 {
                     foreach (var attName in fieldRoslyn.ThemeAttributes.Select(t => t.Split('(')[0]))
                     {
