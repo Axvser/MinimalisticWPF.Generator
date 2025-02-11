@@ -834,7 +834,7 @@ namespace MinimalisticWPF.Generator
                                       {
                                          if(viewModel is MinimalisticWPF.StructuralDesign.Theme.IThemeApplied theme)
                                          {
-                                            {{(fieldRoslyn.CanIsolated ? $"DynamicTheme.SetIsolatedValue(theme,typeof({attName}),nameof({fieldRoslyn.PropertyName}),value);" : $"DynamicTheme.SetSharedValue(typeof({Syntax.Identifier.Text}),typeof({attName}),nameof({fieldRoslyn.PropertyName}),value);")}}
+                                            {{(fieldRoslyn.CanIsolated ? $"DynamicTheme.SetIsolatedValue(theme,typeof({attName}),nameof({fieldRoslyn.PropertyName}),value);" : $"DynamicTheme.SetSharedValue(typeof({Syntax.Identifier.Text}),typeof({attName}),nameof({fieldRoslyn.PropertyName}),e.NewValue);")}}
                                             if(theme.CurrentTheme?.Name == "{{attName}}")
                                             {
                                                viewModel.{{fieldRoslyn.PropertyName}} = ({{fieldRoslyn.TypeName}})e.NewValue;
