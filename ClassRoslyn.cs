@@ -580,11 +580,11 @@ namespace MinimalisticWPF.Generator
                         sourceBuilder.AppendLine($"            On{themeText}NoHovered{fieldRoslyn.PropertyName}Changed(oldValue,value);");
                         if (fieldRoslyn.CanIsolated)
                         {
-                            sourceBuilder.AppendLine($"            DynamicTheme.SetIsolatedValue(typeof({Syntax.Identifier.Text}),typeof({themeText}),nameof({fieldRoslyn.PropertyName}));");
+                            sourceBuilder.AppendLine($"            DynamicTheme.SetIsolatedValue(this,typeof({Syntax.Identifier.Text}),typeof({themeText}),nameof({fieldRoslyn.PropertyName}),value);");
                         }
                         else
                         {
-                            sourceBuilder.AppendLine($"            DynamicTheme.SetSharedValue(typeof({Syntax.Identifier.Text}),typeof({themeText}),nameof({fieldRoslyn.PropertyName}));");
+                            sourceBuilder.AppendLine($"            DynamicTheme.SetSharedValue(typeof({Syntax.Identifier.Text}),typeof({themeText}),nameof({fieldRoslyn.PropertyName}),value);");
                         }
                         sourceBuilder.AppendLine("         }");
                         sourceBuilder.AppendLine("      }");
