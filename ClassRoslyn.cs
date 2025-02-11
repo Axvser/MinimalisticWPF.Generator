@@ -580,7 +580,7 @@ namespace MinimalisticWPF.Generator
                         sourceBuilder.AppendLine($"            On{themeText}NoHovered{fieldRoslyn.PropertyName}Changed(oldValue,value);");
                         if (fieldRoslyn.CanIsolated)
                         {
-                            sourceBuilder.AppendLine($"            DynamicTheme.SetIsolatedValue(this,typeof({Syntax.Identifier.Text}),typeof({themeText}),nameof({fieldRoslyn.PropertyName}),value);");
+                            sourceBuilder.AppendLine($"            DynamicTheme.SetIsolatedValue(this,typeof({themeText}),nameof({fieldRoslyn.PropertyName}),value);");
                         }
                         else
                         {
@@ -832,9 +832,13 @@ namespace MinimalisticWPF.Generator
                                    {
                                       if (d is {{localTypeName}} control && control.DataContext is {{typeNameSpace}}.{{typeName}} viewModel)
                                       {
-                                         if(viewModel is MinimalisticWPF.StructuralDesign.Theme.IThemeApplied theme && theme.CurrentTheme?.Name == "{{attName}}")
+                                         if(viewModel is MinimalisticWPF.StructuralDesign.Theme.IThemeApplied theme)
                                          {
-                                            viewModel.{{fieldRoslyn.PropertyName}} = ({{fieldRoslyn.TypeName}})e.NewValue;
+                                            {{(fieldRoslyn.CanIsolated ? "DynamicTheme.SetIsolatedValue(theme,typeof({themeText}),nameof({fieldRoslyn.PropertyName}),value);" : " DynamicTheme.SetSharedValue(typeof({Syntax.Identifier.Text}),typeof({themeText}),nameof({fieldRoslyn.PropertyName}),value);")}}
+                                            if(theme.CurrentTheme?.Name == "{{attName}}")
+                                            {
+                                               viewModel.{{fieldRoslyn.PropertyName}} = ({{fieldRoslyn.TypeName}})e.NewValue;
+                                            }            
                                          }
                                          control._inner{{attName}}{{fieldRoslyn.PropertyName}}Changed(({{fieldRoslyn.TypeName}})e.OldValue ,({{fieldRoslyn.TypeName}})e.NewValue);
                                       }
