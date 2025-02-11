@@ -29,6 +29,7 @@ namespace MinimalisticWPF.Generator
         public bool CanOverride { get; private set; } = false;
         public bool CanHover { get; private set; } = false;
         public bool CanDependency { get; private set; } = false;
+        public bool CanIsolated {  get; private set; } = false;
         public IEnumerable<string> Cascades { get; private set; } = [];
         public string Initial { get; private set; } = string.Empty;
 
@@ -68,7 +69,8 @@ namespace MinimalisticWPF.Generator
                 CanOverride = (bool)attributeData.ConstructorArguments[1].Value!;
                 CanHover = (bool)attributeData.ConstructorArguments[2].Value!;
                 CanDependency = (bool)attributeData.ConstructorArguments[3].Value!;
-                Cascades = attributeData.ConstructorArguments[4].Values
+                CanIsolated = (bool)attributeData.ConstructorArguments[4].Value!;
+                Cascades = attributeData.ConstructorArguments[5].Values
                     .Select(v => (string)v.Value!);
             }
         }

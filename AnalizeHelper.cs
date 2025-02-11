@@ -95,5 +95,25 @@ namespace MinimalisticWPF.Generator
         {
             return source.Replace('=', ' ').TrimStart();
         }
+        internal static string GetAccessModifier(INamedTypeSymbol symbol)
+        {
+            switch (symbol.DeclaredAccessibility)
+            {
+                case Accessibility.Public:
+                    return "public";
+                case Accessibility.Internal:
+                    return "internal";
+                case Accessibility.Private:
+                    return "private";
+                case Accessibility.Protected:
+                    return "protected";
+                case Accessibility.ProtectedAndInternal:
+                    return "protected internal";
+                case Accessibility.ProtectedOrInternal:
+                    return "private protected";
+                default:
+                    return "internal";
+            }
+        }
     }
 }
