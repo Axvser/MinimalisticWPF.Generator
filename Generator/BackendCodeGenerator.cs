@@ -74,7 +74,7 @@ namespace MinimalisticWPF.Generator
                                 {
                                     continue;
                                 }
-                                sourceBuilder.AppendLine(classRoslyn.GenerateUsing(namespaces[kvp.Key]));
+                                sourceBuilder.AppendLine(classRoslyn.GenerateUsing(namespaces[vmsymbol]));
                                 sourceBuilder.AppendLine(classRoslyn.GenerateNamespace());
                                 sourceBuilder.AppendLine(classRoslyn.GeneratePartialClass());
                                 sourceBuilder.AppendLine(classRoslyn.GenerateITA());
