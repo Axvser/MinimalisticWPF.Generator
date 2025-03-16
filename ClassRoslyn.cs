@@ -158,6 +158,10 @@ namespace MinimalisticWPF.Generator
             {
                 hashUsings.Add("using MinimalisticWPF.AopInterfaces;");
             }
+            if (FieldRoslyns.Any(fr => fr.CanHover))
+            {
+                hashUsings.Add("using System.Windows;");
+            }
             foreach (var name in others)
             {
                 hashUsings.Add(name);
@@ -189,6 +193,10 @@ namespace MinimalisticWPF.Generator
             if (IsAop)
             {
                 hashUsings.Add("using MinimalisticWPF.AopInterfaces;");
+            }
+            if(FieldRoslyns.Any(fr => fr.CanHover))
+            {
+                hashUsings.Add("using System.Windows;");
             }
             foreach (var use in hashUsings)
             {
