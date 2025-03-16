@@ -11,7 +11,7 @@ namespace MinimalisticWPF.Generator
         internal FieldRoslyn(IFieldSymbol fieldSymbol)
         {
             Symbol = fieldSymbol;
-            TypeName = fieldSymbol.Type.ToString();
+            TypeName = fieldSymbol.Type.ToString() ?? string.Empty;
             FieldName = fieldSymbol.Name;
             PropertyName = GetPropertyNameFromFieldName(fieldSymbol.Name);
             ThemeAttributes = GetThemeAttributesTexts(fieldSymbol);
@@ -28,7 +28,7 @@ namespace MinimalisticWPF.Generator
         public bool CanOverride { get; private set; } = false;
         public bool CanHover { get; private set; } = false;
         public bool CanDependency { get; private set; } = false;
-        public bool CanIsolated {  get; private set; } = false;
+        public bool CanIsolated { get; private set; } = false;
         public IEnumerable<string> Cascades { get; private set; } = [];
         public string Initial { get; private set; } = string.Empty;
 

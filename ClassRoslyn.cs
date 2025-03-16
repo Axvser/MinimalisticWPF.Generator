@@ -200,7 +200,7 @@ namespace MinimalisticWPF.Generator
             {
                 hashUsings.Add("using MinimalisticWPF.AopInterfaces;");
             }
-            if(FieldRoslyns.Any(fr => fr.CanHover))
+            if (FieldRoslyns.Any(fr => fr.CanHover))
             {
                 hashUsings.Add("using System.Windows;");
             }
@@ -218,16 +218,18 @@ namespace MinimalisticWPF.Generator
             sourceBuilder.AppendLine("{");
             return sourceBuilder.ToString();
         }
-        public string GeneratePartialClass(bool ignoreViewModel = false,bool ignoreTheme = false)
+        public string GeneratePartialClass(bool ignoreViewModel = false, bool ignoreTheme = false)
         {
             StringBuilder sourceBuilder = new();
             string share = $"{Syntax.Modifiers} class {Syntax.Identifier.Text}";
 
             var list = new List<string>();
+#if NET
             if (IsAop)
             {
                 list.Add(AnalizeHelper.GetInterfaceName(Syntax));
             }
+#endif
             if (IsViewModel && !ignoreViewModel)
             {
                 list.Add("INotifyPropertyChanged");
@@ -279,7 +281,8 @@ namespace MinimalisticWPF.Generator
                 .ToList();
 
             StringBuilder builder = new();
-            var strAop = $"IAop{Symbol.Name}In{Symbol.ContainingNamespace.ToString().Replace('.', '_')}";
+#if NET
+            var strAop = $"IAop{Symbol.Name}In{Symbol.ContainingNamespace?.ToString()?.Replace('.', '_')}";
             if (IsAop)
             {
                 builder.AppendLine($$"""
@@ -287,13 +290,16 @@ namespace MinimalisticWPF.Generator
                                      """);
                 builder.AppendLine();
             }
+#endif
 
             builder.AppendLine($"      {acc} {Symbol.Name} ()");
             builder.AppendLine("      {");
+#if NET
             if (IsAop)
             {
                 builder.AppendLine($"         Proxy = this.CreateProxy<{strAop}>();");
             }
+#endif
             if (IsDynamicTheme)
             {
                 builder.AppendLine($"         DynamicTheme.Awake(this);");
@@ -338,10 +344,12 @@ namespace MinimalisticWPF.Generator
                 builder.AppendLine();
                 builder.AppendLine($"      {acc} {Symbol.Name} ({parameterList})");
                 builder.AppendLine("      {");
+#if NET
                 if (IsAop)
                 {
                     builder.AppendLine($"         Proxy = this.CreateProxy<{strAop}>();");
                 }
+#endif
                 if (IsDynamicTheme)
                 {
                     builder.AppendLine($"         DynamicTheme.Awake(this);");
