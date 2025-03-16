@@ -115,5 +115,10 @@ namespace MinimalisticWPF.Generator
                     return "internal";
             }
         }
+
+        internal static string GetFileName(INamedTypeSymbol symbol, ClassDeclarationSyntax classDeclarationSyntax)
+        {
+            return $"{symbol.ContainingNamespace.ToString().Replace('.', '_')}_{classDeclarationSyntax.Identifier.Text}_FastBackendCodeGeneration.g.cs";
+        }
     }
 }
