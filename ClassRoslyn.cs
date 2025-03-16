@@ -22,9 +22,6 @@ namespace MinimalisticWPF.Generator
                 .Any(att => att.AttributeClass?.Name == "DynamicThemeAttribute");
             IsAop = AnalizeHelper.IsAopClass(classDeclarationSyntax);
             IsViewModel = IsObservableFieldExist(namedTypeSymbol, out var vmfields);
-            IsPoolApplied = namedTypeSymbol
-                .GetAttributes()
-                .Any(att => att.AttributeClass?.Name == "ObjectPoolAttribute");
             if (vmfields != null)
             {
                 FieldRoslyns = vmfields.Select(field => new FieldRoslyn(field));
@@ -38,7 +35,6 @@ namespace MinimalisticWPF.Generator
         public bool IsAop { get; private set; } = false;
         public bool IsDynamicTheme { get; private set; } = false;
         public bool IsViewModel { get; private set; } = false;
-        public bool IsPoolApplied { get; private set; } = false;
         public bool IsHoverApplied { get; private set; } = false;
         public bool IsThemeAttributeExsist { get; private set; } = false;
         public IEnumerable<FieldRoslyn> FieldRoslyns { get; private set; } = [];
@@ -89,8 +85,7 @@ namespace MinimalisticWPF.Generator
             {
                 return namespaces;
             }
-            var classDecl = syntaxRef.GetSyntax() as ClassDeclarationSyntax;
-            if (classDecl == null)
+            if (syntaxRef.GetSyntax() is not ClassDeclarationSyntax classDecl)
             {
                 return namespaces;
             }
@@ -115,7 +110,7 @@ namespace MinimalisticWPF.Generator
         }
         private static string GetComment(string title, string[] messages)
         {
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new();
 
             sb.AppendLine($"      /* {title}");
 
@@ -159,10 +154,6 @@ namespace MinimalisticWPF.Generator
             {
                 hashUsings.Add("using MinimalisticWPF.StructuralDesign.Theme;");
             }
-            if (IsPoolApplied)
-            {
-                hashUsings.Add("using MinimalisticWPF.StructuralDesign.Pool;");
-            }
             if (IsAop)
             {
                 hashUsings.Add("using MinimalisticWPF.AopInterfaces;");
@@ -195,11 +186,6 @@ namespace MinimalisticWPF.Generator
             {
                 hashUsings.Add("using MinimalisticWPF.StructuralDesign.Theme;");
             }
-            if (IsPoolApplied)
-            {
-                hashUsings.Add("using MinimalisticWPF.StructuralDesign.Pool;");
-                hashUsings.Add("using MinimalisticWPF.ObjectPool;");
-            }
             if (IsAop)
             {
                 hashUsings.Add("using MinimalisticWPF.AopInterfaces;");
@@ -218,7 +204,7 @@ namespace MinimalisticWPF.Generator
             sourceBuilder.AppendLine("{");
             return sourceBuilder.ToString();
         }
-        public string GeneratePartialClass(bool ignoreViewModel = false, bool ignorePool = false, bool ignoreTheme = false)
+        public string GeneratePartialClass(bool ignoreViewModel = false,bool ignoreTheme = false)
         {
             StringBuilder sourceBuilder = new();
             string share = $"{Syntax.Modifiers} class {Syntax.Identifier.Text}";
@@ -231,10 +217,6 @@ namespace MinimalisticWPF.Generator
             if (IsViewModel && !ignoreViewModel)
             {
                 list.Add("INotifyPropertyChanged");
-            }
-            if (IsPoolApplied && !ignorePool)
-            {
-                list.Add("IPoolApplied");
             }
             if (IsDynamicTheme && !ignoreTheme)
             {
@@ -418,40 +400,6 @@ namespace MinimalisticWPF.Generator
             sourceBuilder.AppendLine("      }");
             sourceBuilder.AppendLine("      partial void OnThemeChanging(Type? oldTheme, Type newTheme);");
             sourceBuilder.AppendLine("      partial void OnThemeChanged(Type? oldTheme, Type newTheme);");
-            return sourceBuilder.ToString();
-        }
-        public string GenerateIPA()
-        {
-            if (!IsPoolApplied)
-            {
-                return string.Empty;
-            }
-            StringBuilder sourceBuilder = new();
-            sourceBuilder.AppendLine("      public void RunReusing()");
-            sourceBuilder.AppendLine("      {");
-            sourceBuilder.AppendLine("         OnReusing();");
-            sourceBuilder.AppendLine("      }");
-            sourceBuilder.AppendLine("      public void RunReused()");
-            sourceBuilder.AppendLine("      {");
-            sourceBuilder.AppendLine("         OnReused();");
-            sourceBuilder.AppendLine("      }");
-            sourceBuilder.AppendLine("      public bool RunCanRelease()");
-            sourceBuilder.AppendLine("      {");
-            sourceBuilder.AppendLine("         return CanRelease();");
-            sourceBuilder.AppendLine("      }");
-            sourceBuilder.AppendLine("      public void RunReleasing()");
-            sourceBuilder.AppendLine("      {");
-            sourceBuilder.AppendLine("         OnReleasing();");
-            sourceBuilder.AppendLine("      }");
-            sourceBuilder.AppendLine("      public void RunReleased()");
-            sourceBuilder.AppendLine("      {");
-            sourceBuilder.AppendLine("         OnReleased();");
-            sourceBuilder.AppendLine("      }");
-            sourceBuilder.AppendLine("      partial void OnReusing();");
-            sourceBuilder.AppendLine("      partial void OnReused();");
-            sourceBuilder.AppendLine("      private partial bool CanRelease();");
-            sourceBuilder.AppendLine("      partial void OnReleasing();");
-            sourceBuilder.AppendLine("      partial void OnReleased();");
             return sourceBuilder.ToString();
         }
         public string GenerateHoverControl()
