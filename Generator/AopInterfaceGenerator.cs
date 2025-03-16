@@ -9,7 +9,7 @@ using Microsoft.CodeAnalysis.Text;
 
 namespace MinimalisticWPF.Generator
 {
-    [Generator]
+    [Generator(LanguageNames.CSharp)]
     public class AopInterfaceGenerator : IIncrementalGenerator
     {
         public void Initialize(IncrementalGeneratorInitializationContext context)
@@ -119,7 +119,7 @@ namespace MinimalisticWPF.Generator
         private static TypeSyntax GetFullyQualifiedType(Compilation compilation, TypeSyntax typeSyntax)
         {
             SemanticModel model = compilation.GetSemanticModel(typeSyntax.SyntaxTree);
-            var symbol = model.GetTypeInfo(typeSyntax).Type ?? model.GetDeclaredSymbol(typeSyntax);
+            var symbol = model.GetTypeInfo(typeSyntax).Type;
             if (symbol != null)
             {
                 return SyntaxFactory.ParseTypeName(symbol.ToDisplayString());
@@ -128,7 +128,7 @@ namespace MinimalisticWPF.Generator
         }
         private static ParameterListSyntax GetFullyQualifiedParameterList(Compilation compilation, ParameterListSyntax parameterList)
         {
-            List<ParameterSyntax> newParameters = new List<ParameterSyntax>();
+            List<ParameterSyntax> newParameters = [];
             foreach (var parameter in parameterList.Parameters)
             {
                 if (parameter.Type == null) continue;

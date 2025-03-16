@@ -1,9 +1,7 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Cryptography;
 using System.Text;
 
 namespace MinimalisticWPF.Generator
@@ -78,7 +76,7 @@ namespace MinimalisticWPF.Generator
         }
         public static HashSet<string> GetReferencedNamespaces(INamedTypeSymbol namedTypeSymbol)
         {
-            HashSet<string> namespaces = [];
+            HashSet<string> namespaces = new();
 
             var syntaxRef = namedTypeSymbol.DeclaringSyntaxReferences.FirstOrDefault();
             if (syntaxRef == null)
@@ -99,9 +97,17 @@ namespace MinimalisticWPF.Generator
             {
                 if (usingDirective != null)
                 {
+                    // 处理普通 using 指令
                     if (usingDirective.Name != null)
                     {
-                        namespaces.Add($"using {usingDirective.Name};");
+                        // 使用 ToFullString 获取完整的命名空间
+                        namespaces.Add($"using {usingDirective.Name.ToFullString()};");
+                    }
+                    // 处理别名 using 指令
+                    else if (usingDirective.Alias != null)
+                    {
+                        // 例如：using Media = System.Windows.Media;
+                        namespaces.Add($"using {usingDirective.Alias.Name} = {usingDirective.Name?.ToFullString()};");
                     }
                 }
             }
