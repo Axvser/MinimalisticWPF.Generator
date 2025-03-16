@@ -118,5 +118,9 @@ namespace MinimalisticWPF.Generator
         {
             return $"{symbol.ContainingNamespace.ToString().Replace('.', '_')}_{classDeclarationSyntax.Identifier.Text}_FastBackendCodeGeneration.g.cs";
         }
+        internal static string ReplaceBrushes(this string source)
+        {
+            return source.Replace("Brushes.", "System.Windows.Media.Brushes.");
+        }
     }
 }
