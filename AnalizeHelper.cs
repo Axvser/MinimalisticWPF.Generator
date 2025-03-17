@@ -120,7 +120,12 @@ namespace MinimalisticWPF.Generator
         }
         internal static string ReplaceBrushes(this string source)
         {
-            return source.Replace("Brushes.", "System.Windows.Media.Brushes.");
+            var regex = new System.Text.RegularExpressions.Regex(@"(?:\b\w+\.)*Brushes\.(\w+)\b");
+            return regex.Replace(source, match =>
+            {
+                var brushName = match.Groups[1].Value;
+                return match.Value.StartsWith("System.Windows.Media.Brushes.") ? match.Value : $"System.Windows.Media.Brushes.{brushName}";
+            });
         }
     }
 }

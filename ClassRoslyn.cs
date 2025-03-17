@@ -281,7 +281,6 @@ namespace MinimalisticWPF.Generator
                 .ToList();
 
             StringBuilder builder = new();
-#if NET
             var strAop = $"IAop{Symbol.Name}In{Symbol.ContainingNamespace?.ToString()?.Replace('.', '_')}";
             if (IsAop)
             {
@@ -290,16 +289,13 @@ namespace MinimalisticWPF.Generator
                                      """);
                 builder.AppendLine();
             }
-#endif
 
             builder.AppendLine($"      {acc} {Symbol.Name} ()");
             builder.AppendLine("      {");
-#if NET
             if (IsAop)
             {
                 builder.AppendLine($"         Proxy = this.CreateProxy<{strAop}>();");
             }
-#endif
             if (IsDynamicTheme)
             {
                 builder.AppendLine($"         DynamicTheme.Awake(this);");
@@ -344,12 +340,10 @@ namespace MinimalisticWPF.Generator
                 builder.AppendLine();
                 builder.AppendLine($"      {acc} {Symbol.Name} ({parameterList})");
                 builder.AppendLine("      {");
-#if NET
                 if (IsAop)
                 {
                     builder.AppendLine($"         Proxy = this.CreateProxy<{strAop}>();");
                 }
-#endif
                 if (IsDynamicTheme)
                 {
                     builder.AppendLine($"         DynamicTheme.Awake(this);");
@@ -607,7 +601,7 @@ namespace MinimalisticWPF.Generator
             sourceBuilder.AppendLine();
 
             //生成主题修改后的动画效果更新函数
-            sourceBuilder.AppendLine("      protected virtual void UpdateTransitionBoard()");
+            sourceBuilder.AppendLine("      protected virtual void UpdateState()");
             sourceBuilder.AppendLine("      {");
             sourceBuilder.AppendLine("         if(CurrentTheme != null)");
             sourceBuilder.AppendLine("         {");
