@@ -1,5 +1,6 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,10 +9,11 @@ namespace MinimalisticWPF.Generator
 {
     internal class ClassRoslyn
     {
-        internal ClassRoslyn(ClassDeclarationSyntax classDeclarationSyntax, INamedTypeSymbol namedTypeSymbol)
+        internal ClassRoslyn(ClassDeclarationSyntax classDeclarationSyntax, INamedTypeSymbol namedTypeSymbol, Compilation compilation)
         {
             Syntax = classDeclarationSyntax;
             Symbol = namedTypeSymbol;
+            Compilation = compilation;
             IsDynamicTheme = namedTypeSymbol
                 .GetMembers()
                 .Any(member => member.GetAttributes()
@@ -26,10 +28,12 @@ namespace MinimalisticWPF.Generator
                 IsHoverApplied = FieldRoslyns.Any(f => f.CanHover);
             }
             ReadContextConfigParams(namedTypeSymbol);
+            ReadModelConfigParams(namedTypeSymbol, compilation);
         }
 
         public ClassDeclarationSyntax Syntax { get; private set; }
         public INamedTypeSymbol Symbol { get; private set; }
+        public Compilation Compilation { get; private set; }
         public bool IsAop { get; private set; } = false;
         public bool IsDynamicTheme { get; private set; } = false;
         public bool IsViewModel { get; private set; } = false;
@@ -40,6 +44,10 @@ namespace MinimalisticWPF.Generator
         public bool IsContextConfig { get; private set; } = false;
         public string ViewModelTypeName { get; private set; } = string.Empty;
         public string ViewModelValidation { get; private set; } = string.Empty;
+
+        public string ModelTypeName { get; private set; } = string.Empty;
+        public string ModelReaderName { get; private set; } = string.Empty;
+        public string[] ModelPropertyNames { get; private set; } = [];
 
         private static bool FindControlBase(INamedTypeSymbol typeSymbol)
         {
@@ -142,6 +150,47 @@ namespace MinimalisticWPF.Generator
             ViewModelTypeName = (string)attributeData.ConstructorArguments[0].Value!;
             ViewModelValidation = (string)attributeData.ConstructorArguments[1].Value!;
         }
+        private void ReadModelConfigParams(INamedTypeSymbol classSymbol, Compilation compilation)
+        {
+            var attributeData = classSymbol.GetAttributes()
+                .FirstOrDefault(ad => ad.AttributeClass?.Name == "ModelConfigAttribute");
+            if (attributeData != null)
+            {
+                ModelReaderName = (string)attributeData.ConstructorArguments[0].Value!;
+                var validation = (string)attributeData.ConstructorArguments[1].Value!;
+                var target = FindTargetModel(compilation, ModelReaderName, validation);
+
+                if (target != null)
+                {
+                    ModelTypeName = target.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+                    ModelPropertyNames = target.GetMembers().OfType<IPropertySymbol>().Select(s => s.Name).ToArray();
+                }
+                else
+                {
+                    // 处理未找到的情况
+                    throw new InvalidOperationException($"未找到类型：{ModelReaderName}（命名空间验证：{validation}）");
+                }
+            }
+        }
+        private static INamedTypeSymbol? FindTargetModel(
+            Compilation compilation,
+            string typeName,
+            string namespaceValidation)
+        {
+            if (string.IsNullOrEmpty(namespaceValidation))
+            {
+                // 查找所有同名类型并返回第一个
+                return compilation.GetSymbolsWithName(typeName, SymbolFilter.Type)
+                    .OfType<INamedTypeSymbol>()
+                    .FirstOrDefault();
+            }
+            else
+            {
+                // 构造全名并精确查找
+                var fullName = $"{namespaceValidation}.{typeName}";
+                return compilation.GetTypeByMetadataName(fullName) as INamedTypeSymbol;
+            }
+        }
 
         public string GenerateUsing(HashSet<string> others)
         {
@@ -164,45 +213,13 @@ namespace MinimalisticWPF.Generator
             {
                 hashUsings.Add("using MinimalisticWPF.AopInterfaces;");
             }
-            if (FieldRoslyns.Any(fr => fr.CanHover))
+            if (IsContextConfig)
             {
                 hashUsings.Add("using System.Windows;");
             }
             foreach (var name in others)
             {
                 hashUsings.Add(name);
-            }
-            foreach (var use in hashUsings)
-            {
-                sourceBuilder.AppendLine(use);
-            }
-            sourceBuilder.AppendLine();
-            return sourceBuilder.ToString();
-        }
-        public string GenerateUsing()
-        {
-            StringBuilder sourceBuilder = new();
-            sourceBuilder.AppendLine("#nullable enable");
-            sourceBuilder.AppendLine();
-            var hashUsings = GetReferencedNamespaces(Symbol);
-            hashUsings.Add("using MinimalisticWPF;");
-            hashUsings.Add("using MinimalisticWPF.Theme;");
-            hashUsings.Add("using MinimalisticWPF.TransitionSystem;");
-            if (IsViewModel)
-            {
-                hashUsings.Add("using System.ComponentModel;");
-            }
-            if (IsDynamicTheme)
-            {
-                hashUsings.Add("using MinimalisticWPF.StructuralDesign.Theme;");
-            }
-            if (IsAop)
-            {
-                hashUsings.Add("using MinimalisticWPF.AopInterfaces;");
-            }
-            if (FieldRoslyns.Any(fr => fr.CanHover))
-            {
-                hashUsings.Add("using System.Windows;");
             }
             foreach (var use in hashUsings)
             {
@@ -416,6 +433,45 @@ namespace MinimalisticWPF.Generator
             sourceBuilder.AppendLine("      }");
             sourceBuilder.AppendLine("      partial void OnThemeChanging(Type? oldTheme, Type newTheme);");
             sourceBuilder.AppendLine("      partial void OnThemeChanged(Type? oldTheme, Type newTheme);");
+            return sourceBuilder.ToString();
+        }
+        public string GenerateModelReader()
+        {
+            if (IsContextConfig || string.IsNullOrWhiteSpace(ModelTypeName))
+            {
+                return string.Empty;
+            }
+            else
+            {
+                var sourceBuilder = new StringBuilder();
+                // 生成 ToModel 方法
+                sourceBuilder.AppendLine($"      public {ModelTypeName} To{ModelReaderName}()");
+                sourceBuilder.AppendLine("      {");
+                sourceBuilder.AppendLine($"        var model = new {ModelTypeName}();");
+                foreach (var field in FieldRoslyns)
+                {
+                    var targetProperty = string.IsNullOrEmpty(field.ModelAlias)
+                        ? field.PropertyName
+                        : field.ModelAlias;
+
+                    if (ModelPropertyNames.Contains(targetProperty))
+                    {
+                        sourceBuilder.AppendLine($"        model.{targetProperty} = this.{field.PropertyName};");
+                    }
+                }
+                sourceBuilder.AppendLine("        return model;");
+                sourceBuilder.AppendLine("      }");
+                return sourceBuilder.ToString();
+            }
+        }
+        public string GenerateModelReader(ClassRoslyn viewModel)
+        {
+            var sourceBuilder = new StringBuilder();
+            // 生成 ToModel 方法
+            sourceBuilder.AppendLine($"      public {viewModel.ModelTypeName} To{viewModel.ModelReaderName}()");
+            sourceBuilder.AppendLine("      {");
+            sourceBuilder.AppendLine($"         return (({viewModel.Symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)})DataContext).To{viewModel.ModelReaderName}();");
+            sourceBuilder.AppendLine("      }");
             return sourceBuilder.ToString();
         }
         public string GenerateHoverControl()

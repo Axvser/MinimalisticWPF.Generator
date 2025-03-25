@@ -17,6 +17,7 @@ namespace MinimalisticWPF.Generator
             ThemeAttributes = GetThemeAttributesTexts(fieldSymbol);
             Initial = GetInitializerText(fieldSymbol);
             ReadObservableParams(fieldSymbol);
+            ReadModelAliasParams(fieldSymbol);
         }
 
         public IFieldSymbol Symbol { get; private set; }
@@ -31,6 +32,7 @@ namespace MinimalisticWPF.Generator
         public bool CanIsolated { get; private set; } = false;
         public IEnumerable<string> Cascades { get; private set; } = [];
         public string Initial { get; private set; } = string.Empty;
+        public string ModelAlias { get; private set; } = string.Empty;
 
         private static string GetPropertyNameFromFieldName(string fieldName)
         {
@@ -71,6 +73,15 @@ namespace MinimalisticWPF.Generator
                 CanIsolated = (bool)attributeData.ConstructorArguments[4].Value!;
                 Cascades = attributeData.ConstructorArguments[5].Values
                     .Select(v => (string)v.Value!);
+            }
+        }
+        private void ReadModelAliasParams(IFieldSymbol fieldSymbol)
+        {
+            var attributeData = fieldSymbol.GetAttributes()
+                .FirstOrDefault(ad => ad.AttributeClass?.Name == "ModelAliasAttribute");
+            if (attributeData != null)
+            {
+                ModelAlias = (string)attributeData.ConstructorArguments[0].Value!;
             }
         }
         private static string ParseCascadeName(string value)

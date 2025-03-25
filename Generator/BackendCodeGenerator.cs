@@ -52,7 +52,7 @@ namespace MinimalisticWPF.Generator
             Dictionary<string, StringBuilder> generatedSources = []; // 生成文本
             foreach (var kvp in uniqueTargets)
             {
-                var classRoslyn = new ClassRoslyn(kvp.Value, kvp.Key);
+                var classRoslyn = new ClassRoslyn(kvp.Value, kvp.Key, compilation);
                 var fileName = AnalizeHelper.GetFileName(kvp.Key, kvp.Value);
 
                 if (!generatedSources.TryGetValue(fileName, out var sourceBuilder))
@@ -77,10 +77,11 @@ namespace MinimalisticWPF.Generator
                                 sourceBuilder.AppendLine(classRoslyn.GenerateNamespace());
                                 sourceBuilder.AppendLine(classRoslyn.GeneratePartialClass());
                                 sourceBuilder.AppendLine(classRoslyn.GenerateITA());
-                                var vmclassRoslyn = new ClassRoslyn(vm, vmsymbol);
+                                var vmclassRoslyn = new ClassRoslyn(vm, vmsymbol, compilation);
                                 var localName = classRoslyn.Symbol.ContainingNamespace.ToString() + '.' + classRoslyn.Syntax.Identifier.Text;
                                 var typeNameSpace = vmsymbol.ContainingNamespace.ToString() ?? string.Empty;
                                 var vmName = classRoslyn.ViewModelTypeName;
+                                sourceBuilder.AppendLine(classRoslyn.GenerateModelReader(vmclassRoslyn));
                                 sourceBuilder.AppendLine(vmclassRoslyn.GenerateDependencyProperties(localName, typeNameSpace, vmName));
                                 sourceBuilder.AppendLine(vmclassRoslyn.GenerateHoverDependencyProperties(localName, typeNameSpace, vmName));
                                 sourceBuilder.AppendLine(classRoslyn.GenerateEnd());
@@ -100,6 +101,7 @@ namespace MinimalisticWPF.Generator
                         {
                             sourceBuilder.AppendLine(fieldRoslyn.GenerateCode());
                         }
+                        sourceBuilder.AppendLine(classRoslyn.GenerateModelReader());
                         sourceBuilder.AppendLine(classRoslyn.GenerateHoverControl());
                         sourceBuilder.AppendLine(classRoslyn.GenerateEnd());
                         generatedSources[fileName] = sourceBuilder;
