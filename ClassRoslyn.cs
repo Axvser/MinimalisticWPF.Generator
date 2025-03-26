@@ -241,12 +241,10 @@ namespace MinimalisticWPF.Generator
             string share = $"{Syntax.Modifiers} class {Syntax.Identifier.Text}";
 
             var list = new List<string>();
-#if NET
             if (IsAop)
             {
                 list.Add(AnalizeHelper.GetInterfaceName(Syntax));
             }
-#endif
             if (IsViewModel && !ignoreViewModel)
             {
                 list.Add("INotifyPropertyChanged");
