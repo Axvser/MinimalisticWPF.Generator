@@ -11,7 +11,7 @@ namespace MinimalisticWPF.Generator
         internal FieldRoslyn(IFieldSymbol fieldSymbol)
         {
             Symbol = fieldSymbol;
-            TypeName = fieldSymbol.Type.ToString() ?? string.Empty;
+            TypeName = fieldSymbol.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
             FieldName = fieldSymbol.Name;
             PropertyName = GetPropertyNameFromFieldName(fieldSymbol.Name);
             ThemeAttributes = GetThemeAttributesTexts(fieldSymbol);
@@ -47,15 +47,30 @@ namespace MinimalisticWPF.Generator
         }
         private static List<string> GetThemeAttributesTexts(IFieldSymbol fieldSymbol)
         {
-            List<string> result = [];
+            List<string> result = new List<string>();
             foreach (var attribute in fieldSymbol.GetAttributes())
             {
-                if (attribute.AttributeClass == null) continue;
+                if (attribute.AttributeClass == null)
+                    continue;
 
                 if (attribute.AttributeClass.AllInterfaces.Any(i => i.Name == "IThemeAttribute"))
                 {
-                    var final = attribute.ApplicationSyntaxReference?.GetSyntax().ToFullString();
-                    result.Add(final ?? string.Empty);
+                    var attributeSyntax = attribute.ApplicationSyntaxReference?.GetSyntax() as AttributeSyntax;
+                    if (attributeSyntax == null)
+                    {
+                        result.Add(string.Empty);
+                        continue;
+                    }
+
+                    // 获取特性的完全限定名，包括全局命名空间
+                    string fullName = attribute.AttributeClass.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+
+                    // 获取参数列表的字符串表示
+                    string arguments = attributeSyntax.ArgumentList?.ToString() ?? string.Empty;
+
+                    // 拼接完整的特性文本
+                    string final = $"{fullName}{arguments}";
+                    result.Add(final);
                 }
             }
             return result;
@@ -126,7 +141,7 @@ namespace MinimalisticWPF.Generator
             return $" = {expression}";
         }
 
-        public string GenerateCode()
+        public string GenerateCode(string viewmodelName)
         {
             StringBuilder sb = new();
 
@@ -180,7 +195,29 @@ namespace MinimalisticWPF.Generator
             sb.AppendLine($"      partial void On{PropertyName}Changing({TypeName} oldValue,{TypeName} newValue);");
             sb.AppendLine($"      partial void On{PropertyName}Changed({TypeName} oldValue,{TypeName} newValue);");
 
+            sb.AppendLine(GenerateInitializeFunction(viewmodelName));
+
             return sb.ToString();
+        }
+
+        public string GenerateInitializeFunction(string viewmodelName)
+        {
+            if (ThemeAttributes.Count < 1) return string.Empty;
+
+            return $$"""
+                      public static {{TypeName}} Initialize{{PropertyName}}({{TypeName}} alternativeValue)
+                      {
+                          var result = DynamicTheme.GetSharedValue(typeof({{viewmodelName}}), DynamicTheme.CurrentTheme, nameof({{PropertyName}})) as {{TypeName}};
+                          if (result is not null)
+                          {
+                              return result;
+                          }
+                          else
+                          {
+                              return alternativeValue;
+                          }
+                      }
+                """;
         }
     }
 }

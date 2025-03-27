@@ -118,14 +118,24 @@ namespace MinimalisticWPF.Generator
         {
             return $"{symbol.ContainingNamespace.ToString().Replace('.', '_')}_{classDeclarationSyntax.Identifier.Text}_FastBackendCodeGeneration.g.cs";
         }
-        internal static string ReplaceBrushes(this string source)
+        internal static string ExtractThemeName(string fullAttributeText)
         {
-            var regex = new System.Text.RegularExpressions.Regex(@"(?:\b\w+\.)*Brushes\.(\w+)\b");
-            return regex.Replace(source, match =>
-            {
-                var brushName = match.Groups[1].Value;
-                return match.Value.StartsWith("System.Windows.Media.Brushes.") ? match.Value : $"System.Windows.Media.Brushes.{brushName}";
-            });
+            // 步骤1：分割参数部分
+            int firstParen = fullAttributeText.IndexOf('(');
+            string withoutArgs = (firstParen >= 0) ?
+                fullAttributeText.Substring(0, firstParen) :
+                fullAttributeText;
+
+            // 步骤2：定位最后一个命名空间分隔符
+            int lastDot = withoutArgs.LastIndexOf('.');
+            string candidate = (lastDot >= 0) ?
+                withoutArgs.Substring(lastDot + 1) :
+                withoutArgs;
+
+            // 步骤3：严格校验名称规范
+            candidate = candidate.Trim();
+            bool hasInvalidChars = candidate.Contains('.') || candidate.Contains('(');
+            return hasInvalidChars ? string.Empty : candidate;
         }
     }
 }

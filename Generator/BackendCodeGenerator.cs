@@ -78,12 +78,12 @@ namespace MinimalisticWPF.Generator
                                 sourceBuilder.AppendLine(classRoslyn.GeneratePartialClass());
                                 sourceBuilder.AppendLine(classRoslyn.GenerateITA());
                                 var vmclassRoslyn = new ClassRoslyn(vm, vmsymbol, compilation);
-                                var localName = classRoslyn.Symbol.ContainingNamespace.ToString() + '.' + classRoslyn.Syntax.Identifier.Text;
-                                var typeNameSpace = vmsymbol.ContainingNamespace.ToString() ?? string.Empty;
-                                var vmName = classRoslyn.ViewModelTypeName;
+                                var localName = classRoslyn.Symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+                                var vmName = vmclassRoslyn.Symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
                                 sourceBuilder.AppendLine(classRoslyn.GenerateModelReader(vmclassRoslyn));
-                                sourceBuilder.AppendLine(vmclassRoslyn.GenerateDependencyProperties(localName, typeNameSpace, vmName));
-                                sourceBuilder.AppendLine(vmclassRoslyn.GenerateHoverDependencyProperties(localName, typeNameSpace, vmName));
+                                sourceBuilder.AppendLine(vmclassRoslyn.GenerateInitializeInView(vmsymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)));
+                                sourceBuilder.AppendLine(vmclassRoslyn.GenerateDependencyProperties(localName, vmName));
+                                sourceBuilder.AppendLine(vmclassRoslyn.GenerateHoverDependencyProperties(localName, vmName));
                                 sourceBuilder.AppendLine(classRoslyn.GenerateEnd());
                                 generatedSources[fileName] = sourceBuilder;
                             }
@@ -97,9 +97,10 @@ namespace MinimalisticWPF.Generator
                         sourceBuilder.AppendLine(classRoslyn.GenerateConstructor());
                         sourceBuilder.AppendLine(classRoslyn.GenerateIPC());
                         sourceBuilder.AppendLine(classRoslyn.GenerateITA());
+                        var csFullName = classRoslyn.Symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
                         foreach (var fieldRoslyn in classRoslyn.FieldRoslyns)
                         {
-                            sourceBuilder.AppendLine(fieldRoslyn.GenerateCode());
+                            sourceBuilder.AppendLine(fieldRoslyn.GenerateCode(csFullName));
                         }
                         sourceBuilder.AppendLine(classRoslyn.GenerateModelReader());
                         sourceBuilder.AppendLine(classRoslyn.GenerateHoverControl());
@@ -115,7 +116,7 @@ namespace MinimalisticWPF.Generator
 
             foreach (var kvp in generatedSources)
             {
-                context.AddSource(kvp.Key, SourceText.From(kvp.Value.ToString().ReplaceBrushes(), Encoding.UTF8));
+                context.AddSource(kvp.Key, SourceText.From(kvp.Value.ToString(), Encoding.UTF8));
             }  // 输出生成内容
         }
     }
