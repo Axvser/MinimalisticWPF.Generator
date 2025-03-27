@@ -534,7 +534,7 @@ namespace MinimalisticWPF.Generator
                 {
                     foreach (var (fullthemeText, themeText) in fieldRoslyn.ThemeAttributes.Select(t => (t.Split('(')[0], AnalizeHelper.ExtractThemeName(t))))
                     {
-                        sourceBuilder.AppendLine($"      private {fieldRoslyn.TypeName} _{themeText}Hovered{fieldRoslyn.PropertyName} = ({fieldRoslyn.TypeName})DynamicTheme.GetSharedValue(typeof({Symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}),typeof({fullthemeText}),nameof({fieldRoslyn.PropertyName}));");
+                        sourceBuilder.AppendLine($"      private {fieldRoslyn.TypeName} _{themeText}Hovered{fieldRoslyn.PropertyName} = ({fieldRoslyn.TypeName})DynamicTheme.GetSharedValue(typeof({Symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}),typeof({fullthemeText}),\"{fieldRoslyn.PropertyName}\");");
                         sourceBuilder.AppendLine($"      public {fieldRoslyn.TypeName} {themeText}Hovered{fieldRoslyn.PropertyName}");
                         sourceBuilder.AppendLine("      {");
                         sourceBuilder.AppendLine($"         get => _{themeText}Hovered{fieldRoslyn.PropertyName};");
@@ -558,7 +558,7 @@ namespace MinimalisticWPF.Generator
                         sourceBuilder.AppendLine($"      partial void On{themeText}Hovered{fieldRoslyn.PropertyName}Changed({fieldRoslyn.TypeName} oldValue,{fieldRoslyn.TypeName} newValue);");
                         sourceBuilder.AppendLine();
 
-                        sourceBuilder.AppendLine($"      private {fieldRoslyn.TypeName} _{themeText}NoHovered{fieldRoslyn.PropertyName} = ({fieldRoslyn.TypeName})DynamicTheme.GetSharedValue(typeof({Symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}),typeof({fullthemeText}),nameof({fieldRoslyn.PropertyName}));");
+                        sourceBuilder.AppendLine($"      private {fieldRoslyn.TypeName} _{themeText}NoHovered{fieldRoslyn.PropertyName} = ({fieldRoslyn.TypeName})DynamicTheme.GetSharedValue(typeof({Symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}),typeof({fullthemeText}),\"{fieldRoslyn.PropertyName}\");");
                         sourceBuilder.AppendLine($"      public {fieldRoslyn.TypeName} {themeText}NoHovered{fieldRoslyn.PropertyName}");
                         sourceBuilder.AppendLine("      {");
                         sourceBuilder.AppendLine($"         get => _{themeText}NoHovered{fieldRoslyn.PropertyName};");
@@ -579,11 +579,11 @@ namespace MinimalisticWPF.Generator
                         sourceBuilder.AppendLine($"            On{themeText}NoHovered{fieldRoslyn.PropertyName}Changed(oldValue,value);");
                         if (fieldRoslyn.CanIsolated)
                         {
-                            sourceBuilder.AppendLine($"            DynamicTheme.SetIsolatedValue(this,typeof({fullthemeText}),nameof({fieldRoslyn.PropertyName}),value);");
+                            sourceBuilder.AppendLine($"            DynamicTheme.SetIsolatedValue(this,typeof({fullthemeText}),\"{fieldRoslyn.PropertyName}\",value);");
                         }
                         else
                         {
-                            sourceBuilder.AppendLine($"            DynamicTheme.SetSharedValue(typeof({Symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}),typeof({fullthemeText}),nameof({fieldRoslyn.PropertyName}),value);");
+                            sourceBuilder.AppendLine($"            DynamicTheme.SetSharedValue(typeof({Symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}),typeof({fullthemeText}),\"{fieldRoslyn.PropertyName}\",value);");
                         }
                         sourceBuilder.AppendLine("         }");
                         sourceBuilder.AppendLine("      }");
@@ -710,7 +710,7 @@ namespace MinimalisticWPF.Generator
         }
         public string GenerateHoverDependencyProperties(string localTypeName, string vmTypeName)
         {
-            var hoverables = FieldRoslyns.Where(fr => fr.CanHover).ToArray();
+            var hoverables = FieldRoslyns.Where(fr => fr.CanHover && fr.CanDependency).ToArray();
 
             var sourceBuilder = new StringBuilder();
 
@@ -842,7 +842,7 @@ namespace MinimalisticWPF.Generator
                                       {
                                          if(viewModel is MinimalisticWPF.StructuralDesign.Theme.IThemeApplied theme)
                                          {
-                                            {{(fieldRoslyn.CanIsolated ? $"DynamicTheme.SetIsolatedValue(theme,typeof({fullattName}),nameof({fieldRoslyn.PropertyName}),e.NewValue);" : $"DynamicTheme.SetSharedValue(typeof({Symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}),typeof({fullattName}),nameof({fieldRoslyn.PropertyName}),e.NewValue);")}}
+                                            {{(fieldRoslyn.CanIsolated ? $"DynamicTheme.SetIsolatedValue(theme,typeof({fullattName}),\"{fieldRoslyn.PropertyName}\",e.NewValue);" : $"DynamicTheme.SetSharedValue(typeof({Symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}),typeof({fullattName}),\"{fieldRoslyn.PropertyName}\",e.NewValue);")}}
                                             if(theme.CurrentTheme?.Name == "{{attName}}")
                                             {
                                                viewModel.{{fieldRoslyn.PropertyName}} = ({{fieldRoslyn.TypeName}})e.NewValue;
