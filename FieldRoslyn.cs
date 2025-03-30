@@ -207,8 +207,7 @@ namespace MinimalisticWPF.Generator
             return $$"""
                       public static {{TypeName}} Initialize{{PropertyName}}({{TypeName}} alternativeValue)
                       {
-                          var result = DynamicTheme.GetSharedValue(typeof({{viewmodelName}}), DynamicTheme.CurrentTheme, nameof({{PropertyName}})) as {{TypeName}};
-                          if (result is not null)
+                          if (global::MinimalisticWPF.DynamicTheme.GetSharedValue(typeof({{viewmodelName}}), global::MinimalisticWPF.DynamicTheme.CurrentTheme, "{{PropertyName}}") is {{TypeName}} result)
                           {
                               return result;
                           }

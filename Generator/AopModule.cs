@@ -9,8 +9,8 @@ using Microsoft.CodeAnalysis.Text;
 
 namespace MinimalisticWPF.Generator
 {
-    [Generator(LanguageNames.CSharp)]
-    public class AopInterfaceGenerator : IIncrementalGenerator
+    [Generator(LanguageNames.CSharp)] // AOP接口支持
+    public class AopModule : IIncrementalGenerator
     {
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
@@ -28,7 +28,7 @@ namespace MinimalisticWPF.Generator
                     SyntaxFactory.SingletonSeparatedList<BaseTypeSyntax>(
                         SyntaxFactory.SimpleBaseType(
                             SyntaxFactory.QualifiedName(
-                                SyntaxFactory.ParseName("MinimalisticWPF"),
+                                SyntaxFactory.ParseName("global::MinimalisticWPF"),
                                 SyntaxFactory.IdentifierName("IProxy")))));
                 var interfaceDeclaration = SyntaxFactory.InterfaceDeclaration(interfaceName)
                     .AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword))

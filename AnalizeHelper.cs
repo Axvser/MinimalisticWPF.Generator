@@ -1,4 +1,6 @@
-﻿using System.Collections.Immutable;
+﻿using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -8,6 +10,11 @@ namespace MinimalisticWPF.Generator
 {
     internal static class AnalizeHelper
     {
+        const string FULLNAME_THEME = "global::MinimalisticWPF.ThemeAttribute";
+        const string FULLNAME_ITHEMEATTRIBUTE = "global::MinimalisticWPF.StructuralDesign.Theme.IThemeAttribute";
+
+        const string NAME_ASPECTORIENTED = "AspectOriented";
+
         internal static bool IsPartialClass(SyntaxNode node)
         {
             return node is ClassDeclarationSyntax classDecl && classDecl.Modifiers.Any(m => m.IsKind(SyntaxKind.PartialKeyword));
@@ -15,31 +22,58 @@ namespace MinimalisticWPF.Generator
         internal static bool IsAopClass(ClassDeclarationSyntax classDecl)
         {
             return classDecl.Members
-                .OfType<MemberDeclarationSyntax>()
-                .Any(member => member.AttributeLists
+                    .OfType<MemberDeclarationSyntax>()
+                    .Any(member => member.AttributeLists
                     .SelectMany(al => al.Attributes)
-                    .Any(attr => attr.Name.ToString() == "AspectOriented"));
+                    .Any(attr => attr.Name.ToString() == NAME_ASPECTORIENTED));
         }
-        internal static bool FindAttribute(ClassDeclarationSyntax classDecl, string attributeName)
+        internal static bool IsThemeClass(INamedTypeSymbol namedTypeSymbol, out IEnumerable<AttributeData> headThemes, out IEnumerable<Tuple<IFieldSymbol, IEnumerable<AttributeData>>> bodyThemes)
         {
-            return classDecl.Members
-                .OfType<MemberDeclarationSyntax>()
-                .Any(member => member.AttributeLists
-                    .SelectMany(al => al.Attributes)
-                    .Any(attr => attr.Name.ToString() == attributeName));
-        }
-        internal static bool FindAttribute(IFieldSymbol fieldSymbol, string attributeName)
-        {
-            foreach (var attribute in fieldSymbol.GetAttributes())
-            {
-                if (attribute.AttributeClass == null) continue;
+            headThemes = namedTypeSymbol
+                    .GetAttributes()
+                    .Where(att => att.AttributeClass?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == FULLNAME_THEME);
 
-                if (attribute.AttributeClass.AllInterfaces.Any(i => i.Name == attributeName))
-                {
-                    return true;
-                }
+            bodyThemes = namedTypeSymbol
+                    .GetMembers()
+                    .OfType<IFieldSymbol>()
+                    .Select(field => Tuple.Create(field, field.GetAttributes().Where(att => att.AttributeClass?.AllInterfaces.Any(i => i.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == FULLNAME_ITHEMEATTRIBUTE) ?? false)))
+                    .Where(t => t.Item2.Any());
+
+            return headThemes.Any() || bodyThemes.Any();
+        }
+        internal static bool IsViewModelClass(INamedTypeSymbol classSymbol, out IEnumerable<IFieldSymbol> fieldSymbols)
+        {
+            fieldSymbols = classSymbol.GetMembers()
+                    .OfType<IFieldSymbol>()
+                    .Where(field => field.GetAttributes().Any(attr => attr.AttributeClass?.Name == "ObservableAttribute"));
+            return fieldSymbols.Any();
+        }
+
+        internal static INamedTypeSymbol? FindTargetTypeSymbol(
+        Compilation compilation,
+        string typeName,
+        string namespaceValidation)
+        {
+            if (string.IsNullOrEmpty(namespaceValidation))
+            {
+                return compilation.GetSymbolsWithName(typeName, SymbolFilter.Type)
+                    .OfType<INamedTypeSymbol>()
+                    .FirstOrDefault();
             }
-            return false;
+            else
+            {
+                var fullName = $"{namespaceValidation}.{typeName}";
+                return compilation.GetTypeByMetadataName(fullName) as INamedTypeSymbol;
+            }
+        }
+
+        internal static ClassDeclarationSyntax? FindTargetClassSyntax(
+            INamedTypeSymbol symbol)
+        {
+            return symbol.DeclaringSyntaxReferences
+                .Select(reference => reference.GetSyntax())
+                .OfType<ClassDeclarationSyntax>()
+                .FirstOrDefault();
         }
 
         internal static ClassDeclarationSyntax GetClassDeclaration(GeneratorSyntaxContext context)
@@ -47,6 +81,10 @@ namespace MinimalisticWPF.Generator
             var classDeclaration = (ClassDeclarationSyntax)context.Node;
             return classDeclaration;
         }
+
+        /// <summary>
+        /// 过滤非partial类以确保可使用源生成器
+        /// </summary>
         internal static IncrementalValuesProvider<ClassDeclarationSyntax> DefiningFilter(IncrementalGeneratorInitializationContext context)
         {
             IncrementalValuesProvider<ClassDeclarationSyntax> classDeclarations =
@@ -56,28 +94,24 @@ namespace MinimalisticWPF.Generator
                 .Where(static m => m != null)!;
             return classDeclarations;
         }
+        /// <summary>
+        /// 获取最终用以分析项目的数据
+        /// </summary>
         internal static IncrementalValueProvider<(Compilation Compilation, ImmutableArray<ClassDeclarationSyntax> Classes)> GetValue(IncrementalGeneratorInitializationContext context, IncrementalValuesProvider<ClassDeclarationSyntax> classDeclarations)
         {
             IncrementalValueProvider<(Compilation Compilation, ImmutableArray<ClassDeclarationSyntax> Classes)> compilationAndClasses =
                 context.CompilationProvider.Combine(classDeclarations.Collect());
             return compilationAndClasses;
         }
-        internal static string GetNamespace(ClassDeclarationSyntax classDeclaration)
-        {
-            SyntaxNode? current = classDeclaration;
-            while (current != null && current is not NamespaceDeclarationSyntax)
-            {
-                current = current.Parent;
-            }
 
-            return current is NamespaceDeclarationSyntax namespaceDeclaration
-                ? namespaceDeclaration.Name.ToString()
-                : "Global";
-        }
+        /// <summary>
+        /// 获取类所指向的AOP接口
+        /// </summary>
         internal static string GetInterfaceName(ClassDeclarationSyntax classDeclarationSyntax)
         {
-            return $"IAop{classDeclarationSyntax.Identifier.Text}In{GetNamespace(classDeclarationSyntax).Replace('.', '_')}";
+            return $"{classDeclarationSyntax.Identifier.Text}_{GetNamespace(classDeclarationSyntax).Replace('.', '_')}_Aop";
         }
+
         internal static string GetPropertyNameByFieldName(VariableDeclaratorSyntax variable)
         {
             if (variable.Identifier.Text.StartsWith("_"))
@@ -89,10 +123,29 @@ namespace MinimalisticWPF.Generator
                 return char.ToUpper(variable.Identifier.Text[0]) + variable.Identifier.Text.Substring(1);
             }
         }
+        internal static string GetPropertyNameByFieldName(string fieldName)
+        {
+            if (fieldName.StartsWith("_"))
+            {
+                return char.ToUpper(fieldName[1]) + fieldName.Substring(2);
+            }
+            else
+            {
+                return char.ToUpper(fieldName[0]) + fieldName.Substring(1);
+            }
+        }
+
+        /// <summary>
+        /// 解析字段初始化原文
+        /// </summary>
         internal static string InitialTextParse(this string source)
         {
             return source.Replace('=', ' ').TrimStart();
         }
+
+        /// <summary>
+        /// 解析可访问性
+        /// </summary>
         internal static string GetAccessModifier(INamedTypeSymbol symbol)
         {
             switch (symbol.DeclaredAccessibility)
@@ -114,10 +167,18 @@ namespace MinimalisticWPF.Generator
             }
         }
 
-        internal static string GetFileName(INamedTypeSymbol symbol, ClassDeclarationSyntax classDeclarationSyntax)
+        internal static string GetViewFileName(INamedTypeSymbol symbol, ClassDeclarationSyntax classDeclarationSyntax)
         {
-            return $"{symbol.ContainingNamespace.ToString().Replace('.', '_')}_{classDeclarationSyntax.Identifier.Text}_FastBackendCodeGeneration.g.cs";
+            return $"{classDeclarationSyntax.Identifier.Text}_{symbol.ContainingNamespace.ToString().Replace('.', '_')}_View.g.cs";
         }
+        internal static string GetViewModelFileName(INamedTypeSymbol symbol, ClassDeclarationSyntax classDeclarationSyntax)
+        {
+            return $"{classDeclarationSyntax.Identifier.Text}_{symbol.ContainingNamespace.ToString().Replace('.', '_')}_ViewModel.g.cs";
+        }
+
+        /// <summary>
+        /// 从主题特性原始文本中提取主题名称
+        /// </summary>
         internal static string ExtractThemeName(string fullAttributeText)
         {
             // 步骤1：分割参数部分
@@ -136,6 +197,19 @@ namespace MinimalisticWPF.Generator
             candidate = candidate.Trim();
             bool hasInvalidChars = candidate.Contains('.') || candidate.Contains('(');
             return hasInvalidChars ? string.Empty : candidate;
+        }
+
+        private static string GetNamespace(ClassDeclarationSyntax classDeclaration)
+        {
+            SyntaxNode? current = classDeclaration;
+            while (current != null && current is not NamespaceDeclarationSyntax)
+            {
+                current = current.Parent;
+            }
+
+            return current is NamespaceDeclarationSyntax namespaceDeclaration
+                ? namespaceDeclaration.Name.ToString()
+                : "Global";
         }
     }
 }
