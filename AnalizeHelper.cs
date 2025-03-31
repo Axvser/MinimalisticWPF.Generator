@@ -225,5 +225,15 @@ namespace MinimalisticWPF.Generator
                 ? namespaceDeclaration.Name.ToString()
                 : "Global";
         }
+
+        internal static string ReplaceBrushes(this string source)
+        {
+            var regex = new System.Text.RegularExpressions.Regex(@"(?:\b\w+\.)*Brushes\.(\w+)\b");
+            return regex.Replace(source, match =>
+            {
+                var brushName = match.Groups[1].Value;
+                return match.Value.Contains("System.Windows.Media.Brushes.") ? match.Value : $"global::System.Windows.Media.Brushes.{brushName}";
+            });
+        }
     }
 }
