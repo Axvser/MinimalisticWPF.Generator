@@ -1,10 +1,10 @@
-﻿using System;
+﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace MinimalisticWPF.Generator
 {
@@ -175,7 +175,7 @@ namespace MinimalisticWPF.Generator
         {
             return $"{classDeclarationSyntax.Identifier.Text}_{symbol.ContainingNamespace.ToString().Replace('.', '_')}_ViewModel.g.cs";
         }
-        
+
         internal static string GetDefaultInitialText(string fullTypeName)
         {
             return fullTypeName switch

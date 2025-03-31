@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace MinimalisticWPF.Generator
+﻿namespace MinimalisticWPF.Generator
 {
     internal interface IFactory
     {

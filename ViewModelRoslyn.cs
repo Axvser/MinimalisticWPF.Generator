@@ -1,10 +1,10 @@
-﻿using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis;
+﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using MinimalisticWPF.Generator.Factory;
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Linq;
-using MinimalisticWPF.Generator.Factory;
+using System.Text;
 
 namespace MinimalisticWPF.Generator
 {
