@@ -360,6 +360,10 @@ namespace MinimalisticWPF.Generator
                     }
                 }
             }
+            if(Hovers.Count > 0)
+            {
+                builder.AppendLine($"            UpdateHoverState(global::MinimalisticWPF.TransitionSystem.TransitionParams.Empty);");
+            }
             builder.AppendLine("         };");
             if (Hovers.Count > 0)
             {
@@ -456,6 +460,10 @@ namespace MinimalisticWPF.Generator
                             builder.AppendLine($"            {nohoveredName} = {nohoveredName} == {AnalizeHelper.GetDefaultInitialText(propertySymbol.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat))} ? ({propertySymbol.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)})(global::MinimalisticWPF.DynamicTheme.GetSharedValue(typeof({Symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}),typeof({theme.Item2}),\"{TAG_PROXY}{propertySymbol.Name}\")??{propertySymbol.Name}) : {nohoveredName};");
                         }
                     }
+                }
+                if (Hovers.Count > 0)
+                {
+                    builder.AppendLine($"            UpdateHoverState(global::MinimalisticWPF.TransitionSystem.TransitionParams.Empty);");
                 }
                 builder.AppendLine("         };");
                 if (Hovers.Count > 0)
@@ -572,7 +580,7 @@ namespace MinimalisticWPF.Generator
                                 _isHovered = value;
                                 if (!IsThemeChanging)
                                 {
-                                   UpdateHoverState();
+                                   this.BeginTransition(IsHovered ? HoveredTransition : NoHoveredTransition);
                                 }
                               }
                            }
@@ -647,6 +655,28 @@ namespace MinimalisticWPF.Generator
                 sourceBuilder.AppendLine("         }");
             }
             sourceBuilder.AppendLine($"         this.BeginTransition(IsHovered ? HoveredTransition : NoHoveredTransition);");
+            sourceBuilder.AppendLine("      }");
+            sourceBuilder.AppendLine();
+            sourceBuilder.AppendLine("      protected virtual void UpdateHoverState(global::MinimalisticWPF.TransitionSystem.TransitionParams transitionParam)");
+            sourceBuilder.AppendLine("      {");
+            if (IsDynamicTheme)
+            {
+                sourceBuilder.AppendLine("         if(CurrentTheme != null)");
+                sourceBuilder.AppendLine("         {");
+                foreach (var propertySymbol in hoverables)
+                {
+                    var attributes = themeGroups.FirstOrDefault(tg => tg.Key == propertySymbol.Name);
+                    if (attributes is null) continue;
+
+                    if (IsDynamicTheme)
+                    {
+                        sourceBuilder.AppendLine($"             HoveredTransition.SetProperty(b => b.{propertySymbol.Name}, {propertySymbol.Name}_SelectThemeValue_Hovered(CurrentTheme.Name));");
+                        sourceBuilder.AppendLine($"             NoHoveredTransition.SetProperty(b => b.{propertySymbol.Name}, {propertySymbol.Name}_SelectThemeValue_NoHovered(CurrentTheme.Name));");
+                    }
+                }
+                sourceBuilder.AppendLine("         }");
+            }
+            sourceBuilder.AppendLine($"         this.BeginTransition(IsHovered ? HoveredTransition : NoHoveredTransition,transitionParam);");
             sourceBuilder.AppendLine("      }");
 
             //生成Hovered值选择器
@@ -762,7 +792,7 @@ namespace MinimalisticWPF.Generator
                                   global::MinimalisticWPF.DynamicTheme.SetIsolatedValue(target,global::MinimalisticWPF.DynamicTheme.CurrentTheme,"{{TAG_PROXY}}{{propertySymbol.Name}}",newValue);
                             """);
                         dp_factory2.SetterBody.Add($$"""
-                                        if(target.CurrentTheme == typeof({{theme.Item2}}))
+                                  if(target.CurrentTheme == typeof({{theme.Item2}}))
                                         {
                                            target.NoHoveredTransition.SetProperty(x => x.{{propertySymbol.Name}}, newValue);
                                            if(!target.IsHoverChanging && !target.IsHovered && !target.IsThemeChanging)
