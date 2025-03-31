@@ -6,9 +6,9 @@ namespace MinimalisticWPF.Generator.Factory
 {
     public class DependencyPropertyFactory(string fullOwnerTypeName, string fullTypeName, string propertyName, string initialText) : IFactory
     {
-        const string DP_NAMESPACE = "global::System.Window.";
+        const string DP_NAMESPACE = "global::System.Windows.";
         const string DP_SUFFIX = "Property";
-        const string RETRACT = "   ";
+        const string RETRACT = "      ";
 
         public string FullOwnerTypeName { get; private set; } = fullOwnerTypeName;
         public string FullTypeName { get; private set; } = fullTypeName;
@@ -23,7 +23,7 @@ namespace MinimalisticWPF.Generator.Factory
             var setterBody = new StringBuilder();
             for (int i = 0; i < SetterBody.Count; i++)
             {
-                setterBody.AppendLine(SetterBody[i]);
+                setterBody.AppendLine($"{RETRACT}{SetterBody[i]}");
             }
 
             return $$"""
@@ -44,7 +44,7 @@ namespace MinimalisticWPF.Generator.Factory
                 {{RETRACT}}   {
                 {{RETRACT}}      var oldValue = ({{FullTypeName}})e.OldValue;
                 {{RETRACT}}      var newValue = ({{FullTypeName}})e.NewValue;
-                {{RETRACT}}      {{setterBody.ToString()}}
+                {{setterBody.ToString()}}
                 {{RETRACT}}      target.On{{PropertyName}}Changed(oldValue,newValue);
                 {{RETRACT}}   }
                 {{RETRACT}}}

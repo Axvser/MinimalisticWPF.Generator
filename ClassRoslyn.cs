@@ -49,25 +49,6 @@ namespace MinimalisticWPF.Generator
             sourceBuilder.AppendLine("{");
             return sourceBuilder.ToString();
         }
-        public string GenerateITA()
-        {
-            if (!IsDynamicTheme) return string.Empty;
-
-            StringBuilder sourceBuilder = new();
-            sourceBuilder.AppendLine("      public bool IsThemeChanging { get; set; } = false;");
-            sourceBuilder.AppendLine("      public Type? CurrentTheme { get; set; } = null;");
-            sourceBuilder.AppendLine("      public void RunThemeChanging(Type? oldTheme, Type newTheme)");
-            sourceBuilder.AppendLine("      {");
-            sourceBuilder.AppendLine("         OnThemeChanging(oldTheme ,newTheme);");
-            sourceBuilder.AppendLine("      }");
-            sourceBuilder.AppendLine("      public void RunThemeChanged(Type? oldTheme, Type newTheme)");
-            sourceBuilder.AppendLine("      {");
-            sourceBuilder.AppendLine("         OnThemeChanged(oldTheme ,newTheme);");
-            sourceBuilder.AppendLine("      }");
-            sourceBuilder.AppendLine("      partial void OnThemeChanging(Type? oldTheme, Type newTheme);");
-            sourceBuilder.AppendLine("      partial void OnThemeChanged(Type? oldTheme, Type newTheme);");
-            return sourceBuilder.ToString();
-        }
         public string GenerateEnd()
         {
             StringBuilder sourceBuilder = new();

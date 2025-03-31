@@ -175,6 +175,20 @@ namespace MinimalisticWPF.Generator
         {
             return $"{classDeclarationSyntax.Identifier.Text}_{symbol.ContainingNamespace.ToString().Replace('.', '_')}_ViewModel.g.cs";
         }
+        
+        internal static string GetDefaultInitialText(string fullTypeName)
+        {
+            return fullTypeName switch
+            {
+                "global::System.Windows.Media.Brush" => "global::System.Windows.Media.Brushes.Transparent",
+                "double" => "0.0",
+                "global::System.Windows.Thickness" => "new global::System.Windows.Thickness(0)",
+                "global::System.Windows.Media.Transform" => "global::System.Windows.Media.Transform.Identity",
+                "global::System.Windows.CornerRadius" => "new global::System.Windows.CornerRadius(0)",
+                "global::System.Windows.Point" => "new global::System.Windows.Point(0,0)",
+                _ => $"default{fullTypeName}"
+            };
+        }
 
         /// <summary>
         /// 从主题特性原始文本中提取主题名称
