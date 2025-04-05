@@ -404,7 +404,7 @@ namespace MinimalisticWPF.Generator
                                         }
                             """);
                         sourceBuilder.AppendLine($"            On{themeText}NoHovered{fieldRoslyn.PropertyName}Changed(oldValue,value);");
-                        sourceBuilder.AppendLine($"            {NAMESPACE_CONSTRUCTOR}DynamicTheme.SetSharedValue(typeof({Symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}),typeof({fullthemeText}),\"{fieldRoslyn.PropertyName}\",value);");
+                        sourceBuilder.AppendLine($"            {NAMESPACE_CONSTRUCTOR}DynamicTheme.SetIsolatedValue(this,typeof({fullthemeText}),\"{fieldRoslyn.PropertyName}\",value);");
                         sourceBuilder.AppendLine("         }");
                         sourceBuilder.AppendLine("      }");
                         sourceBuilder.AppendLine($"      partial void On{themeText}NoHovered{fieldRoslyn.PropertyName}Changed({fieldRoslyn.TypeName} oldValue,{fieldRoslyn.TypeName} newValue);");

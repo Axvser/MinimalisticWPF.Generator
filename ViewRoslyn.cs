@@ -337,6 +337,15 @@ namespace MinimalisticWPF.Generator
                 builder.AppendLine($"            {property.Name} = ({property.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)})(global::MinimalisticWPF.DynamicTheme.GetSharedValue(typeof({Symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}),global::MinimalisticWPF.DynamicTheme.CurrentTheme,\"{TAG_PROXY}{property.Name}\")??{property.Name});");
             }
             builder.AppendLine("         };");
+            if (Symbol.Name == "MainWindow")
+            {
+                builder.AppendLine($$"""
+                                 Closed += (sender, e) =>
+                                 {
+                                     global::MinimalisticWPF.DynamicTheme.Dispose();
+                                 };
+                        """);
+            }
             if (Hovers.Count > 0)
             {
                 builder.AppendLine($$"""
@@ -410,6 +419,15 @@ namespace MinimalisticWPF.Generator
                     builder.AppendLine($"            {property.Name} = ({property.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)})(global::MinimalisticWPF.DynamicTheme.GetSharedValue(typeof({Symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}),global::MinimalisticWPF.DynamicTheme.CurrentTheme,\"{TAG_PROXY}{property.Name}\")??{property.Name});");
                 }
                 builder.AppendLine("         };");
+                if (Symbol.Name == "MainWindow")
+                {
+                    builder.AppendLine($$"""
+                                 Closed += (sender, e) =>
+                                 {
+                                     global::MinimalisticWPF.DynamicTheme.Dispose();
+                                 };
+                        """);
+                }
                 if (Hovers.Count > 0)
                 {
                     builder.AppendLine($$"""
@@ -792,7 +810,7 @@ namespace MinimalisticWPF.Generator
 
             foreach (var fieldRoslyn in hoverables)
             {
-                if (IsDynamicTheme && fieldRoslyn.ThemeAttributes.Count > 0)
+                if (fieldRoslyn.ThemeAttributes.Count > 0)
                 {
                     foreach (var themeText in fieldRoslyn.ThemeAttributes.Select(t => AnalizeHelper.ExtractThemeName(t)))
                     {
