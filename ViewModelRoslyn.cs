@@ -119,11 +119,11 @@ namespace MinimalisticWPF.Generator
             sourceBuilder.AppendLine("      }");
             sourceBuilder.AppendLine("      public void RunThemeChanged(Type? oldTheme, Type newTheme)");
             sourceBuilder.AppendLine("      {");
-            sourceBuilder.AppendLine("         OnThemeChanged(oldTheme ,newTheme);");
             if (FieldRoslyns.Any(f => f.CanHover))
             {
                 sourceBuilder.AppendLine("         UpdateHoverState();");
             }
+            sourceBuilder.AppendLine("         OnThemeChanged(oldTheme ,newTheme);");
             sourceBuilder.AppendLine("      }");
             sourceBuilder.AppendLine("      partial void OnThemeChanging(Type? oldTheme, Type newTheme);");
             sourceBuilder.AppendLine("      partial void OnThemeChanged(Type? oldTheme, Type newTheme);");
@@ -157,6 +157,11 @@ namespace MinimalisticWPF.Generator
             if (IsDynamicTheme)
             {
                 builder.AppendLine($"         {NAMESPACE_CONSTRUCTOR}DynamicTheme.Awake(this);");
+            }
+            if (FieldRoslyns.Any(f => f.CanHover))
+            {
+                builder.AppendLine($"          HoveredTransition.SetParams(TransitionParams.Hover);");
+                builder.AppendLine($"          NoHoveredTransition.SetParams(TransitionParams.Hover);");
             }
             foreach (var method in methods.Where(m => !m.Parameters.Any()))
             {
@@ -205,6 +210,11 @@ namespace MinimalisticWPF.Generator
                 if (IsDynamicTheme)
                 {
                     builder.AppendLine($"         {NAMESPACE_CONSTRUCTOR}DynamicTheme.Awake(this);");
+                }
+                if (FieldRoslyns.Any(f => f.CanHover))
+                {
+                    builder.AppendLine($"          HoveredTransition.SetParams(TransitionParams.Hover);");
+                    builder.AppendLine($"          NoHoveredTransition.SetParams(TransitionParams.Hover);");
                 }
                 foreach (var method in group)
                 {
