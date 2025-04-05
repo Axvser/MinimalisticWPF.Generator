@@ -258,7 +258,10 @@ namespace MinimalisticWPF.Generator
             sourceBuilder.AppendLine("      }");
             sourceBuilder.AppendLine("      public void RunThemeChanged(Type? oldTheme, Type newTheme)");
             sourceBuilder.AppendLine("      {");
-            sourceBuilder.AppendLine("         UpdateHoverState();");
+            if (Hovers.Any())
+            {
+                sourceBuilder.AppendLine("         UpdateHoverState();");
+            }
             sourceBuilder.AppendLine("         OnThemeChanged(oldTheme ,newTheme);");
             sourceBuilder.AppendLine("      }");
             sourceBuilder.AppendLine("      partial void OnThemeChanging(Type? oldTheme, Type newTheme);");
@@ -297,7 +300,7 @@ namespace MinimalisticWPF.Generator
             {
                 builder.AppendLine($"         {NAMESPACE_CONSTRUCTOR}DynamicTheme.Awake(this);");
             }
-            if(Hovers.Any())
+            if (Hovers.Any())
             {
                 builder.AppendLine($"          HoveredTransition.SetParams(TransitionParams.Hover);");
                 builder.AppendLine($"          NoHoveredTransition.SetParams(TransitionParams.Hover);");
