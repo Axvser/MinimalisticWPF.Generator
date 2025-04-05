@@ -55,7 +55,7 @@ namespace MinimalisticWPF.Generator
 
             foreach (var kvp in generatedSources)
             {
-                context.AddSource(kvp.Key, SourceText.From(kvp.Value.ToString().ReplaceBrushes(), Encoding.UTF8));
+                context.AddSource(kvp.Key, SourceText.From(kvp.Value.ToString().ReplaceBrushes().ReplaceGradientSpreadMethods(), Encoding.UTF8));
             }  // 输出生成内容
         }
     }

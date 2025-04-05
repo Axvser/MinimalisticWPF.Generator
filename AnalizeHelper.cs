@@ -235,5 +235,16 @@ namespace MinimalisticWPF.Generator
                 return match.Value.Contains("System.Windows.Media.Brushes.") ? match.Value : $"global::System.Windows.Media.Brushes.{brushName}";
             });
         }
+        internal static string ReplaceGradientSpreadMethods(this string source)
+        {
+            var regex = new System.Text.RegularExpressions.Regex(@"(?:\b\w+\.)*GradientSpreadMethod\.(\w+)\b");
+            return regex.Replace(source, match =>
+            {
+                var methodName = match.Groups[1].Value;
+                return match.Value.Contains("System.Windows.Media.GradientSpreadMethod.")
+                    ? match.Value
+                    : $"global::System.Windows.Media.GradientSpreadMethod.{methodName}";
+            });
+        }
     }
 }

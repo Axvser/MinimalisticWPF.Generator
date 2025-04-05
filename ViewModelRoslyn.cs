@@ -404,14 +404,7 @@ namespace MinimalisticWPF.Generator
                                         }
                             """);
                         sourceBuilder.AppendLine($"            On{themeText}NoHovered{fieldRoslyn.PropertyName}Changed(oldValue,value);");
-                        if (fieldRoslyn.CanIsolated)
-                        {
-                            sourceBuilder.AppendLine($"            {NAMESPACE_CONSTRUCTOR}DynamicTheme.SetIsolatedValue(this,typeof({fullthemeText}),\"{fieldRoslyn.PropertyName}\",value);");
-                        }
-                        else
-                        {
-                            sourceBuilder.AppendLine($"            {NAMESPACE_CONSTRUCTOR}DynamicTheme.SetSharedValue(typeof({Symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}),typeof({fullthemeText}),\"{fieldRoslyn.PropertyName}\",value);");
-                        }
+                        sourceBuilder.AppendLine($"            {NAMESPACE_CONSTRUCTOR}DynamicTheme.SetSharedValue(typeof({Symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}),typeof({fullthemeText}),\"{fieldRoslyn.PropertyName}\",value);");
                         sourceBuilder.AppendLine("         }");
                         sourceBuilder.AppendLine("      }");
                         sourceBuilder.AppendLine($"      partial void On{themeText}NoHovered{fieldRoslyn.PropertyName}Changed({fieldRoslyn.TypeName} oldValue,{fieldRoslyn.TypeName} newValue);");
@@ -473,8 +466,14 @@ namespace MinimalisticWPF.Generator
                 {
                     if (IsDynamicTheme && fieldRoslyn.ThemeAttributes.Count > 0)
                     {
+                        sourceBuilder.AppendLine($"           if(HoveredTransition.PropertyState.Values.TryGetValue(nameof({fieldRoslyn.PropertyName}),out _))");
+                        sourceBuilder.AppendLine("           {");
                         sourceBuilder.AppendLine($"             HoveredTransition.SetProperty(b => b.{fieldRoslyn.PropertyName}, {fieldRoslyn.PropertyName}_SelectThemeValue_Hovered(CurrentTheme.Name));");
+                        sourceBuilder.AppendLine("           }");
+                        sourceBuilder.AppendLine($"           if(HoveredTransition.PropertyState.Values.TryGetValue(nameof({fieldRoslyn.PropertyName}),out _))");
+                        sourceBuilder.AppendLine("           {");
                         sourceBuilder.AppendLine($"             NoHoveredTransition.SetProperty(b => b.{fieldRoslyn.PropertyName}, {fieldRoslyn.PropertyName}_SelectThemeValue_NoHovered(CurrentTheme.Name));");
+                        sourceBuilder.AppendLine("           }");
                     }
                 }
                 sourceBuilder.AppendLine("         }");

@@ -336,34 +336,6 @@ namespace MinimalisticWPF.Generator
             {
                 builder.AppendLine($"            {property.Name} = ({property.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)})(global::MinimalisticWPF.DynamicTheme.GetSharedValue(typeof({Symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}),global::MinimalisticWPF.DynamicTheme.CurrentTheme,\"{TAG_PROXY}{property.Name}\")??{property.Name});");
             }
-            foreach (var hover in Hovers)
-            {
-                var themeGroup = themeGroups.FirstOrDefault(t => t.Key == hover);
-                var propertySymbol = PropertyTree.FirstOrDefault(p => p.Name == hover);
-                if (propertySymbol is null) continue;
-
-                if (themeGroup is null)
-                {
-                    var hoveredName = $"Hovered{hover}";
-                    var nohoveredName = $"NoHovered{hover}";
-                    builder.AppendLine($"            {hoveredName} = {hoveredName} == {AnalizeHelper.GetDefaultInitialText(propertySymbol.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat))} ? {propertySymbol.Name} : {hoveredName};");
-                    builder.AppendLine($"            {nohoveredName} = {nohoveredName} == {AnalizeHelper.GetDefaultInitialText(propertySymbol.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat))} ? {propertySymbol.Name} : {nohoveredName};");
-                }
-                else
-                {
-                    foreach (var theme in themeGroup)
-                    {
-                        var hoveredName = $"{AnalizeHelper.ExtractThemeName(theme.Item2)}Hovered{hover}";
-                        var nohoveredName = $"{AnalizeHelper.ExtractThemeName(theme.Item2)}NoHovered{hover}";
-                        builder.AppendLine($"            {hoveredName} = {hoveredName} == {AnalizeHelper.GetDefaultInitialText(propertySymbol.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat))} ? ({propertySymbol.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)})(global::MinimalisticWPF.DynamicTheme.GetSharedValue(typeof({Symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}),typeof({theme.Item2}),\"{TAG_PROXY}{propertySymbol.Name}\")??{propertySymbol.Name}) : {hoveredName};");
-                        builder.AppendLine($"            {nohoveredName} = {nohoveredName} == {AnalizeHelper.GetDefaultInitialText(propertySymbol.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat))} ? ({propertySymbol.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)})(global::MinimalisticWPF.DynamicTheme.GetSharedValue(typeof({Symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}),typeof({theme.Item2}),\"{TAG_PROXY}{propertySymbol.Name}\")??{propertySymbol.Name}) : {nohoveredName};");
-                    }
-                }
-            }
-            if(Hovers.Count > 0)
-            {
-                builder.AppendLine($"            UpdateHoverState(global::MinimalisticWPF.TransitionSystem.TransitionParams.Empty);");
-            }
             builder.AppendLine("         };");
             if (Hovers.Count > 0)
             {
@@ -434,36 +406,8 @@ namespace MinimalisticWPF.Generator
                     builder.AppendLine($"            CurrentTheme = global::MinimalisticWPF.DynamicTheme.CurrentTheme;");
                 }
                 foreach (var property in PropertyTree.Where(p => Themes.Any(t => t.Item1 == p.Name)))
-                {   // 动态获取主题初始值
+                {
                     builder.AppendLine($"            {property.Name} = ({property.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)})(global::MinimalisticWPF.DynamicTheme.GetSharedValue(typeof({Symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}),global::MinimalisticWPF.DynamicTheme.CurrentTheme,\"{TAG_PROXY}{property.Name}\")??{property.Name});");
-                }
-                foreach (var hover in Hovers)
-                {
-                    var themeGroup = themeGroups.FirstOrDefault(t => t.Key == hover);
-                    var propertySymbol = PropertyTree.FirstOrDefault(p => p.Name == hover);
-                    if (propertySymbol is null) continue;
-
-                    if (themeGroup is null)
-                    {
-                        var hoveredName = $"Hovered{hover}";
-                        var nohoveredName = $"NoHovered{hover}";
-                        builder.AppendLine($"            {hoveredName} = {hoveredName} == {AnalizeHelper.GetDefaultInitialText(propertySymbol.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat))} ? {propertySymbol.Name} : {hoveredName};");
-                        builder.AppendLine($"            {nohoveredName} = {nohoveredName} == {AnalizeHelper.GetDefaultInitialText(propertySymbol.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat))} ? {propertySymbol.Name} : {nohoveredName};");
-                    }
-                    else
-                    {
-                        foreach (var theme in themeGroup)
-                        {
-                            var hoveredName = $"{AnalizeHelper.ExtractThemeName(theme.Item2)}Hovered{hover}";
-                            var nohoveredName = $"{AnalizeHelper.ExtractThemeName(theme.Item2)}NoHovered{hover}";
-                            builder.AppendLine($"            {hoveredName} = {hoveredName} == {AnalizeHelper.GetDefaultInitialText(propertySymbol.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat))} ? ({propertySymbol.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)})(global::MinimalisticWPF.DynamicTheme.GetSharedValue(typeof({Symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}),typeof({theme.Item2}),\"{TAG_PROXY}{propertySymbol.Name}\")??{propertySymbol.Name}) : {hoveredName};");
-                            builder.AppendLine($"            {nohoveredName} = {nohoveredName} == {AnalizeHelper.GetDefaultInitialText(propertySymbol.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat))} ? ({propertySymbol.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)})(global::MinimalisticWPF.DynamicTheme.GetSharedValue(typeof({Symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}),typeof({theme.Item2}),\"{TAG_PROXY}{propertySymbol.Name}\")??{propertySymbol.Name}) : {nohoveredName};");
-                        }
-                    }
-                }
-                if (Hovers.Count > 0)
-                {
-                    builder.AppendLine($"            UpdateHoverState(global::MinimalisticWPF.TransitionSystem.TransitionParams.Empty);");
                 }
                 builder.AppendLine("         };");
                 if (Hovers.Count > 0)
@@ -548,6 +492,21 @@ namespace MinimalisticWPF.Generator
                     p_factory.AttributeBody.Add($"{config.Item2}({string.Join(",", config.Item3)}");
                 }
                 factories.Add(p_factory);
+
+                // 主题修改入口
+                if (!Hovers.Contains(group.Key))
+                {
+                    foreach (var config in configs)
+                    {
+                        var dp_factory = new DependencyPropertyFactory(
+                        Symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+                        symbol.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+                        $"{AnalizeHelper.ExtractThemeName(config.Item2)}{symbol.Name}",
+                        AnalizeHelper.GetDefaultInitialText(symbol.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)));
+                        dp_factory.SetterBody.Add($"      global::MinimalisticWPF.DynamicTheme.SetIsolatedValue(target,typeof({config.Item2}),\"{dp_factory.PropertyName}\",newValue);");
+                        factories.Add(dp_factory);
+                    }
+                }
             }
 
             foreach (var factory in factories)
@@ -670,8 +629,14 @@ namespace MinimalisticWPF.Generator
 
                     if (IsDynamicTheme)
                     {
+                        sourceBuilder.AppendLine($"           if(HoveredTransition.PropertyState.Values.TryGetValue(nameof({propertySymbol.Name}),out _))");
+                        sourceBuilder.AppendLine("           {");
                         sourceBuilder.AppendLine($"             HoveredTransition.SetProperty(b => b.{propertySymbol.Name}, {propertySymbol.Name}_SelectThemeValue_Hovered(CurrentTheme.Name));");
+                        sourceBuilder.AppendLine("           }");
+                        sourceBuilder.AppendLine($"           if(NoHoveredTransition.PropertyState.Values.TryGetValue(nameof({propertySymbol.Name}),out _))");
+                        sourceBuilder.AppendLine("           {");
                         sourceBuilder.AppendLine($"             NoHoveredTransition.SetProperty(b => b.{propertySymbol.Name}, {propertySymbol.Name}_SelectThemeValue_NoHovered(CurrentTheme.Name));");
+                        sourceBuilder.AppendLine("           }");
                     }
                 }
                 sourceBuilder.AppendLine("         }");
@@ -797,7 +762,7 @@ namespace MinimalisticWPF.Generator
                                            target.NoHoveredTransition.SetProperty(x => x.{{propertySymbol.Name}}, newValue);
                                            if(!target.IsHoverChanging && !target.IsHovered && !target.IsThemeChanging)
                                            {
-                                           target.{{propertySymbol.Name}} = newValue;
+                                              target.{{propertySymbol.Name}} = newValue;
                                            }
                                         }
                             """);
@@ -958,7 +923,7 @@ namespace MinimalisticWPF.Generator
                                       {
                                          if(viewModel is MinimalisticWPF.StructuralDesign.Theme.IThemeApplied theme)
                                          {
-                                            {{(fieldRoslyn.CanIsolated ? $"{NAMESPACE_CONSTRUCTOR}DynamicTheme.SetIsolatedValue(theme,typeof({fullattName}),\"{fieldRoslyn.PropertyName}\",e.NewValue);" : $"{NAMESPACE_CONSTRUCTOR}DynamicTheme.SetSharedValue(typeof({Symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}),typeof({fullattName}),\"{fieldRoslyn.PropertyName}\",e.NewValue);")}}
+                                            {{NAMESPACE_CONSTRUCTOR}}DynamicTheme.SetIsolatedValue(theme,typeof({{fullattName}}),\"{{fieldRoslyn.PropertyName}}\",e.NewValue);
                                             if(theme.CurrentTheme?.Name == "{{attName}}")
                                             {
                                                viewModel.{{fieldRoslyn.PropertyName}} = ({{fieldRoslyn.TypeName}})e.NewValue;

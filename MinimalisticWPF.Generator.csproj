@@ -8,7 +8,7 @@
 		<Nullable>enable</Nullable>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<Title>MinimalisticWPF.Generator</Title>
-		<Version>3.0.2</Version>
+		<Version>3.1.0-pre</Version>
 		<Authors>Axvser</Authors>
 		<PackageProjectUrl>https://github.com/Axvser/MinimalisticWPF.Generator</PackageProjectUrl>
 		<RepositoryUrl>https://github.com/Axvser/MinimalisticWPF.Generator</RepositoryUrl>
