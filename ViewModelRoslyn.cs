@@ -466,14 +466,8 @@ namespace MinimalisticWPF.Generator
                 {
                     if (IsDynamicTheme && fieldRoslyn.ThemeAttributes.Count > 0)
                     {
-                        sourceBuilder.AppendLine($"           if(HoveredTransition.PropertyState.Values.TryGetValue(nameof({fieldRoslyn.PropertyName}),out _))");
-                        sourceBuilder.AppendLine("           {");
                         sourceBuilder.AppendLine($"             HoveredTransition.SetProperty(b => b.{fieldRoslyn.PropertyName}, {fieldRoslyn.PropertyName}_SelectThemeValue_Hovered(CurrentTheme.Name));");
-                        sourceBuilder.AppendLine("           }");
-                        sourceBuilder.AppendLine($"           if(HoveredTransition.PropertyState.Values.TryGetValue(nameof({fieldRoslyn.PropertyName}),out _))");
-                        sourceBuilder.AppendLine("           {");
                         sourceBuilder.AppendLine($"             NoHoveredTransition.SetProperty(b => b.{fieldRoslyn.PropertyName}, {fieldRoslyn.PropertyName}_SelectThemeValue_NoHovered(CurrentTheme.Name));");
-                        sourceBuilder.AppendLine("           }");
                     }
                 }
                 sourceBuilder.AppendLine("         }");
