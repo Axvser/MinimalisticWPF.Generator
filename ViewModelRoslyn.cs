@@ -120,11 +120,11 @@ namespace MinimalisticWPF.Generator
             sourceBuilder.AppendLine("      }");
             sourceBuilder.AppendLine("      public void RunThemeChanged(global::System.Type? oldTheme, global::System.Type newTheme)");
             sourceBuilder.AppendLine("      {");
-            sourceBuilder.AppendLine("         if(newTheme == oldTheme) return;");
             if (FieldRoslyns.Any(f => f.CanHover))
             {
                 sourceBuilder.AppendLine("         UpdateHoverState();");
             }
+            sourceBuilder.AppendLine("         if(newTheme == oldTheme) return;");
             sourceBuilder.AppendLine("         OnThemeChanged(oldTheme ,newTheme);");
             sourceBuilder.AppendLine("      }");
             sourceBuilder.AppendLine("      partial void OnThemeChanging(global::System.Type? oldTheme, global::System.Type newTheme);");
