@@ -254,6 +254,7 @@ namespace MinimalisticWPF.Generator
             sourceBuilder.AppendLine("      public global::System.Type? CurrentTheme { get; set; } = null;");
             sourceBuilder.AppendLine("      public void RunThemeChanging(global::System.Type? oldTheme, global::System.Type newTheme)");
             sourceBuilder.AppendLine("      {");
+            sourceBuilder.AppendLine("         if(newTheme == oldTheme) return;");
             sourceBuilder.AppendLine("         OnThemeChanging(oldTheme ,newTheme);");
             sourceBuilder.AppendLine("      }");
             sourceBuilder.AppendLine("      public void RunThemeChanged(global::System.Type? oldTheme, global::System.Type newTheme)");
