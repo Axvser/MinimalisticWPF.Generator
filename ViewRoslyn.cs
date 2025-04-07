@@ -249,7 +249,13 @@ namespace MinimalisticWPF.Generator
         {
             if (!IsDynamicTheme) return string.Empty;
 
+            var isHover = Hovers.Any();
+
             StringBuilder sourceBuilder = new();
+            if (isHover)
+            {
+                sourceBuilder.AppendLine("      public TransitionScheduler[] _runningHovers { get; protected set; } = [];");
+            }
             sourceBuilder.AppendLine("      public bool IsThemeChanging { get; set; } = false;");
             sourceBuilder.AppendLine("      public global::System.Type? CurrentTheme { get; set; } = null;");
             sourceBuilder.AppendLine("      public void RunThemeChanging(global::System.Type? oldTheme, global::System.Type newTheme)");
@@ -260,7 +266,8 @@ namespace MinimalisticWPF.Generator
             sourceBuilder.AppendLine("      public void RunThemeChanged(global::System.Type? oldTheme, global::System.Type newTheme)");
             sourceBuilder.AppendLine("      {");
             sourceBuilder.AppendLine("         if(newTheme == oldTheme) return;");
-            if (Hovers.Any())
+
+            if (isHover)
             {
                 sourceBuilder.AppendLine("         UpdateHoverState();");
             }
@@ -709,7 +716,13 @@ namespace MinimalisticWPF.Generator
                 }
                 sourceBuilder.AppendLine("         }");
             }
-            sourceBuilder.AppendLine($"         this.BeginTransition(IsHovered ? HoveredTransition : NoHoveredTransition,transitionParam);");
+            sourceBuilder.AppendLine($$"""
+                         foreach (var item in _runningHovers)
+                         {
+                            item.Dispose();
+                         }
+                         _runningHovers = this.BeginTransitions(IsHovered ? HoveredTransition : NoHoveredTransition);
+                """);
             sourceBuilder.AppendLine("      }");
 
             //生成Hovered值选择器
