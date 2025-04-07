@@ -254,10 +254,23 @@ namespace MinimalisticWPF.Generator
             StringBuilder sourceBuilder = new();
             if (isHover)
             {
-                sourceBuilder.AppendLine("      public TransitionScheduler[] _runningHovers { get; protected set; } = [];");
+                sourceBuilder.AppendLine("      public global::MinimalisticWPF.TransitionSystem.TransitionScheduler[] _runningHovers { get; protected set; } = global::System.Array.Empty<global::MinimalisticWPF.TransitionSystem.TransitionScheduler>();");
             }
+            sourceBuilder.AppendLine("      private bool _isNewTheme = true;");
+            sourceBuilder.AppendLine("      private global::System.Type? _currentTheme = null;");
             sourceBuilder.AppendLine("      public bool IsThemeChanging { get; set; } = false;");
-            sourceBuilder.AppendLine("      public global::System.Type? CurrentTheme { get; set; } = null;");
+            sourceBuilder.AppendLine($$"""
+                      public global::System.Type? CurrentTheme
+                      {
+                         get => _currentTheme;
+                         set
+                         {
+                            if(value == null || value == _currentTheme) return;
+                            _currentTheme = value;
+                            _isNewTheme = true;
+                         }
+                      }
+                """);
             sourceBuilder.AppendLine("      public void RunThemeChanging(global::System.Type? oldTheme, global::System.Type newTheme)");
             sourceBuilder.AppendLine("      {");
             sourceBuilder.AppendLine("         if(newTheme == oldTheme) return;");
@@ -619,7 +632,7 @@ namespace MinimalisticWPF.Generator
                                 _isHovered = value;
                                 if (!IsThemeChanging)
                                 {
-                                   this.BeginTransition(IsHovered ? HoveredTransition : NoHoveredTransition);
+                                   UpdateHoverState();
                                 }
                               }
                            }
@@ -656,7 +669,7 @@ namespace MinimalisticWPF.Generator
                          {
                             if(_isHoverChanging != value)
                             {
-                            _isHoverChanging = value;
+                               _isHoverChanging = value;
                             }
                          }
                       }
@@ -678,30 +691,9 @@ namespace MinimalisticWPF.Generator
             sourceBuilder.AppendLine("      {");
             if (IsDynamicTheme)
             {
-                sourceBuilder.AppendLine("         if(CurrentTheme != null)");
+                sourceBuilder.AppendLine("         if(_isNewTheme && CurrentTheme != null)");
                 sourceBuilder.AppendLine("         {");
-                foreach (var propertySymbol in hoverables)
-                {
-                    var attributes = themeGroups.FirstOrDefault(tg => tg.Key == propertySymbol.Name);
-                    if (attributes is null) continue;
-
-                    if (IsDynamicTheme)
-                    {
-                        sourceBuilder.AppendLine($"             HoveredTransition.SetProperty(b => b.{propertySymbol.Name}, {propertySymbol.Name}_SelectThemeValue_Hovered(CurrentTheme.Name));");
-                        sourceBuilder.AppendLine($"             NoHoveredTransition.SetProperty(b => b.{propertySymbol.Name}, {propertySymbol.Name}_SelectThemeValue_NoHovered(CurrentTheme.Name));");
-                    }
-                }
-                sourceBuilder.AppendLine("         }");
-            }
-            sourceBuilder.AppendLine($"         this.BeginTransition(IsHovered ? HoveredTransition : NoHoveredTransition);");
-            sourceBuilder.AppendLine("      }");
-            sourceBuilder.AppendLine();
-            sourceBuilder.AppendLine("      protected virtual void UpdateHoverState(global::MinimalisticWPF.TransitionSystem.TransitionParams transitionParam)");
-            sourceBuilder.AppendLine("      {");
-            if (IsDynamicTheme)
-            {
-                sourceBuilder.AppendLine("         if(CurrentTheme != null)");
-                sourceBuilder.AppendLine("         {");
+                sourceBuilder.AppendLine("             _isNewTheme = false;");
                 foreach (var propertySymbol in hoverables)
                 {
                     var attributes = themeGroups.FirstOrDefault(tg => tg.Key == propertySymbol.Name);
@@ -716,11 +708,42 @@ namespace MinimalisticWPF.Generator
                 sourceBuilder.AppendLine("         }");
             }
             sourceBuilder.AppendLine($$"""
-                         foreach (var item in _runningHovers)
+                         var copy = _runningHovers;
+                         foreach (var item in copy)
                          {
                             item.Dispose();
                          }
                          _runningHovers = this.BeginTransitions(IsHovered ? HoveredTransition : NoHoveredTransition);
+                """);
+            sourceBuilder.AppendLine("      }");
+            sourceBuilder.AppendLine();
+            sourceBuilder.AppendLine("      protected virtual void UpdateHoverState(global::MinimalisticWPF.TransitionSystem.TransitionParams transitionParam)");
+            sourceBuilder.AppendLine("      {");
+            if (IsDynamicTheme)
+            {
+                sourceBuilder.AppendLine("         if(_isNewTheme && CurrentTheme != null)");
+                sourceBuilder.AppendLine("         {");
+                sourceBuilder.AppendLine("             _isNewTheme = false;");
+                foreach (var propertySymbol in hoverables)
+                {
+                    var attributes = themeGroups.FirstOrDefault(tg => tg.Key == propertySymbol.Name);
+                    if (attributes is null) continue;
+
+                    if (IsDynamicTheme)
+                    {
+                        sourceBuilder.AppendLine($"             HoveredTransition.SetProperty(b => b.{propertySymbol.Name}, {propertySymbol.Name}_SelectThemeValue_Hovered(CurrentTheme.Name));");
+                        sourceBuilder.AppendLine($"             NoHoveredTransition.SetProperty(b => b.{propertySymbol.Name}, {propertySymbol.Name}_SelectThemeValue_NoHovered(CurrentTheme.Name));");
+                    }
+                }
+                sourceBuilder.AppendLine("         }");
+            }
+            sourceBuilder.AppendLine($$"""
+                         var copy = _runningHovers;
+                         foreach (var item in copy)
+                         {
+                            item.Dispose();
+                         }
+                         this.BeginTransition(IsHovered ? HoveredTransition : NoHoveredTransition, transitionParam);
                 """);
             sourceBuilder.AppendLine("      }");
 

@@ -110,9 +110,28 @@ namespace MinimalisticWPF.Generator
         {
             if (!IsDynamicTheme) return string.Empty;
 
+            var isHover = FieldRoslyns.Any(f => f.CanHover);
+
             StringBuilder sourceBuilder = new();
+            if (isHover)
+            {
+                sourceBuilder.AppendLine("      public global::MinimalisticWPF.TransitionSystem.TransitionScheduler[] _runningHovers { get; protected set; } = global::System.Array.Empty<global::MinimalisticWPF.TransitionSystem.TransitionScheduler>();");
+            }
+            sourceBuilder.AppendLine("      private bool _isNewTheme = true;");
+            sourceBuilder.AppendLine("      private global::System.Type? _currentTheme = null;");
             sourceBuilder.AppendLine("      public bool IsThemeChanging { get; set; } = false;");
-            sourceBuilder.AppendLine("      public global::System.Type? CurrentTheme { get; set; } = null;");
+            sourceBuilder.AppendLine($$"""
+                      public global::System.Type? CurrentTheme
+                      {
+                         get => _currentTheme;
+                         set
+                         {
+                            if(value == null || value == _currentTheme) return;
+                            _currentTheme = value;
+                            _isNewTheme = true;
+                         }
+                      }
+                """);
             sourceBuilder.AppendLine("      public void RunThemeChanging(global::System.Type? oldTheme, global::System.Type newTheme)");
             sourceBuilder.AppendLine("      {");
             sourceBuilder.AppendLine("         if(newTheme == oldTheme) return;");
@@ -120,7 +139,7 @@ namespace MinimalisticWPF.Generator
             sourceBuilder.AppendLine("      }");
             sourceBuilder.AppendLine("      public void RunThemeChanged(global::System.Type? oldTheme, global::System.Type newTheme)");
             sourceBuilder.AppendLine("      {");
-            if (FieldRoslyns.Any(f => f.CanHover))
+            if (isHover)
             {
                 sourceBuilder.AppendLine("         UpdateHoverState();");
             }
@@ -304,7 +323,7 @@ namespace MinimalisticWPF.Generator
                                _isHovered = value;
                                if (!IsThemeChanging)
                                {
-                                   this.BeginTransition(value ? HoveredTransition : NoHoveredTransition);
+                                   UpdateHoverState();
                                }
                             }
                          }
@@ -323,7 +342,7 @@ namespace MinimalisticWPF.Generator
                             if(_isHovered != value)
                             {
                                _isHovered = value;
-                               this.BeginTransition(value ? HoveredTransition : NoHoveredTransition);
+                               UpdateHoverState();
                             }
                          }
                       }
@@ -472,8 +491,9 @@ namespace MinimalisticWPF.Generator
             sourceBuilder.AppendLine("      {");
             if (IsDynamicTheme)
             {
-                sourceBuilder.AppendLine("         if(CurrentTheme != null)");
+                sourceBuilder.AppendLine("         if(_isNewTheme && CurrentTheme != null)");
                 sourceBuilder.AppendLine("         {");
+                sourceBuilder.AppendLine("             _isNewTheme = false;");
                 foreach (var fieldRoslyn in hoverables)
                 {
                     if (IsDynamicTheme && fieldRoslyn.ThemeAttributes.Count > 0)
@@ -484,7 +504,14 @@ namespace MinimalisticWPF.Generator
                 }
                 sourceBuilder.AppendLine("         }");
             }
-            sourceBuilder.AppendLine($"          this.BeginTransition(IsHovered ? HoveredTransition : NoHoveredTransition);");
+            sourceBuilder.AppendLine($$"""
+                         var copy = _runningHovers;
+                         foreach (var item in copy)
+                         {
+                            item.Dispose();
+                         }
+                         _runningHovers = this.BeginTransitions(IsHovered ? HoveredTransition : NoHoveredTransition);
+                """);
             sourceBuilder.AppendLine("      }");
 
             //生成Hovered值选择器
