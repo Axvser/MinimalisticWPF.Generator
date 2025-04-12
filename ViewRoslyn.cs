@@ -366,7 +366,7 @@ namespace MinimalisticWPF.Generator
                                  _clickuptime++;
                                  if (_clickdowntime > 0 && _clickuptime > 0)
                                  {
-                                     Click.Invoke(this, e);
+                                     Click?.Invoke(this, e);
                                      _clickdowntime = 0;
                                      _clickuptime = 0;
                                  }
@@ -511,7 +511,7 @@ namespace MinimalisticWPF.Generator
                                  _clickuptime++;
                                  if (_clickdowntime > 0 && _clickuptime > 0)
                                  {
-                                     Click.Invoke(this, e);
+                                     Click?.Invoke(this, e);
                                      _clickdowntime = 0;
                                      _clickuptime = 0;
                                  }
