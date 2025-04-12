@@ -13,7 +13,9 @@ namespace MinimalisticWPF.Generator
         const string NAMESPACE_CONFIG = "global::MinimalisticWPF.";
         const string FULLNAME_THEMECONFIG = "global::MinimalisticWPF.ThemeAttribute";
         const string FULLNAME_HOVERCONFIG = "global::MinimalisticWPF.HoverAttribute";
-        const string NAMESPACE_DP = "global::System.Windows.";
+        const string FULLNAME_CLICKCONFIG = "global::MinimalisticWPF.ClickModuleAttribute";
+        const string NAME_INITIALIZE = "InitializeComponent";
+        const string NAMESPACE_WINDOWS = "global::System.Windows.";
         const string NAMESPACE_CONSTRUCTOR = "global::MinimalisticWPF.";
         const string TAG_PROXY = "_proxy";
         const string NAMESPACE_TRANSITOIN = "global::MinimalisticWPF.TransitionSystem.";
@@ -33,11 +35,15 @@ namespace MinimalisticWPF.Generator
             }
             Hovers = hovers;
             Themes = themes;
-            LoadPropertySymbolAtTree(Symbol, PropertyTree);
-            IsView = IsUIElement(namedTypeSymbol) && (Hovers.Count > 0 || Themes.Count > 0 || (DataContextSyntax != null && DataContextSymbol != null));
+            LoadPropertySymbolAtTree(namedTypeSymbol, PropertyTree);
+            ReadClickConfig(namedTypeSymbol);
+            IsInitializable = IsInitializeComponentExist(namedTypeSymbol);
+            IsView = IsUIElement(namedTypeSymbol) && (Hovers.Count > 0 || Themes.Count > 0 || (DataContextSyntax != null && DataContextSymbol != null) || IsClick);
         }
 
         public bool IsView { get; set; } = false;
+        public bool IsInitializable { get; set; } = false;
+        public bool IsClick { get; set; } = false;
 
         List<IPropertySymbol> PropertyTree { get; set; } = [];
 
@@ -67,7 +73,16 @@ namespace MinimalisticWPF.Generator
                 }
             }
         }
-        private bool IsUIElement(INamedTypeSymbol? symbol)
+        private void ReadClickConfig(INamedTypeSymbol symbol)
+        {
+            var attributeData = symbol.GetAttributes()
+                .FirstOrDefault(ad => ad.AttributeClass?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == FULLNAME_CLICKCONFIG);
+            if (attributeData != null)
+            {
+                IsClick = true;
+            }
+        }
+        private static bool IsUIElement(INamedTypeSymbol? symbol)
         {
             if (symbol == null)
                 return false;
@@ -78,6 +93,12 @@ namespace MinimalisticWPF.Generator
 
             // 递归检查基类
             return IsUIElement(symbol.BaseType);
+        }
+        private static bool IsInitializeComponentExist(INamedTypeSymbol symbol)
+        {
+            return symbol.GetMembers()
+                .OfType<IMethodSymbol>()
+                .Any(m => m.Name == NAME_INITIALIZE && m.Parameters.Length == 0 && m.ReturnsVoid);
         }
         private HashSet<string> GetHoverAttributesTexts()
         {
@@ -252,10 +273,7 @@ namespace MinimalisticWPF.Generator
             var isHover = Hovers.Any();
 
             StringBuilder sourceBuilder = new();
-            if (isHover)
-            {
-                sourceBuilder.AppendLine("      public global::MinimalisticWPF.TransitionSystem.TransitionScheduler[] _runningHovers { get; protected set; } = global::System.Array.Empty<global::MinimalisticWPF.TransitionSystem.TransitionScheduler>();");
-            }
+
             sourceBuilder.AppendLine("      private bool _isNewTheme = true;");
             sourceBuilder.AppendLine("      private global::System.Type? _currentTheme = null;");
             sourceBuilder.AppendLine("      public bool IsThemeChanging { get; set; } = false;");
@@ -310,9 +328,51 @@ namespace MinimalisticWPF.Generator
                 builder.AppendLine();
             }
 
+            if (IsClick)
+            {
+                builder.AppendLine($$"""
+                                           private int _clickdowntime = 0;
+                                           private int _clickuptime = 0;
+                                           public event {{NAMESPACE_WINDOWS}}RoutedEventHandler Click;
+                                     """);
+            }
+
             builder.AppendLine($"      {acc} {Symbol.Name}()");
             builder.AppendLine("      {");
-            builder.AppendLine("         InitializeComponent();");
+            if (IsInitializable)
+            {
+                builder.AppendLine("         InitializeComponent();");
+            }
+            if (IsClick)
+            {
+                builder.AppendLine($$"""
+                             MouseLeave += (sender, e) =>
+                             {
+                                 _clickdowntime = 0;
+                                 _clickuptime = 0;
+                             };
+                             MouseLeftButtonDown += (sender, e) =>
+                             {
+                                 _clickdowntime++;
+                                 if (_clickdowntime > 0 && _clickuptime > 0)
+                                 {
+                                     Click.Invoke(this, e);
+                                     _clickdowntime = 0;
+                                     _clickuptime = 0;
+                                 }
+                             };
+                             MouseLeftButtonUp += (sender, e) =>
+                             {
+                                 _clickuptime++;
+                                 if (_clickdowntime > 0 && _clickuptime > 0)
+                                 {
+                                     Click.Invoke(this, e);
+                                     _clickdowntime = 0;
+                                     _clickuptime = 0;
+                                 }
+                             };
+                    """);
+            }
             if (IsAop)
             {
                 builder.AppendLine($"         Proxy = this.CreateProxy<{strAop}>();");
@@ -323,8 +383,8 @@ namespace MinimalisticWPF.Generator
             }
             if (Hovers.Any())
             {
-                builder.AppendLine($"          HoveredTransition.SetParams(TransitionParams.Hover);");
-                builder.AppendLine($"          NoHoveredTransition.SetParams(TransitionParams.Hover);");
+                builder.AppendLine($"         HoveredTransition.SetParams(TransitionParams.Hover);");
+                builder.AppendLine($"         NoHoveredTransition.SetParams(TransitionParams.Hover);");
             }
             foreach (var method in methods.Where(m => !m.Parameters.Any()))
             {
@@ -424,7 +484,40 @@ namespace MinimalisticWPF.Generator
                 builder.AppendLine();
                 builder.AppendLine($"      {acc} {Symbol.Name}({parameterList})");
                 builder.AppendLine("      {");
-                builder.AppendLine("         InitializeComponent();");
+                if (IsInitializable)
+                {
+                    builder.AppendLine("         InitializeComponent();");
+                }
+                if (IsClick)
+                {
+                    builder.AppendLine($$"""
+                             MouseLeave += (sender, e) =>
+                             {
+                                 _clickdowntime = 0;
+                                 _clickuptime = 0;
+                             };
+                             MouseLeftButtonDown += (sender, e) =>
+                             {
+                                 _clickdowntime++;
+                                 if (_clickdowntime > 0 && _clickuptime > 0)
+                                 {
+                                     Click.Invoke(this, e);
+                                     _clickdowntime = 0;
+                                     _clickuptime = 0;
+                                 }
+                             };
+                             MouseLeftButtonUp += (sender, e) =>
+                             {
+                                 _clickuptime++;
+                                 if (_clickdowntime > 0 && _clickuptime > 0)
+                                 {
+                                     Click.Invoke(this, e);
+                                     _clickdowntime = 0;
+                                     _clickuptime = 0;
+                                 }
+                             };
+                    """);
+                }
                 if (IsAop)
                 {
                     builder.AppendLine($"         Proxy = this.CreateProxy<{strAop}>();");
@@ -435,8 +528,8 @@ namespace MinimalisticWPF.Generator
                 }
                 if (Hovers.Any())
                 {
-                    builder.AppendLine($"          HoveredTransition.SetParams(TransitionParams.Hover);");
-                    builder.AppendLine($"          NoHoveredTransition.SetParams(TransitionParams.Hover);");
+                    builder.AppendLine($"         HoveredTransition.SetParams(TransitionParams.Hover);");
+                    builder.AppendLine($"         NoHoveredTransition.SetParams(TransitionParams.Hover);");
                 }
                 foreach (var method in group)
                 {
@@ -685,6 +778,8 @@ namespace MinimalisticWPF.Generator
                 """);
 
             sourceBuilder.AppendLine();
+            sourceBuilder.AppendLine("      public global::MinimalisticWPF.TransitionSystem.TransitionScheduler[] _runningHovers { get; protected set; } = global::System.Array.Empty<global::MinimalisticWPF.TransitionSystem.TransitionScheduler>();");
+            sourceBuilder.AppendLine();
 
             //生成主题修改后的动画效果更新函数
             sourceBuilder.AppendLine("      protected virtual void UpdateHoverState()");
@@ -905,13 +1000,13 @@ namespace MinimalisticWPF.Generator
                                       get => ({{fieldRoslyn.TypeName}})GetValue({{themeText}}Hovered{{fieldRoslyn.PropertyName}}Property);
                                       set => SetValue({{themeText}}Hovered{{fieldRoslyn.PropertyName}}Property, value);
                                    }
-                                   public static readonly {{NAMESPACE_DP}}DependencyProperty {{themeText}}Hovered{{fieldRoslyn.PropertyName}}Property =
-                                      {{NAMESPACE_DP}}DependencyProperty.Register(
+                                   public static readonly {{NAMESPACE_WINDOWS}}DependencyProperty {{themeText}}Hovered{{fieldRoslyn.PropertyName}}Property =
+                                      {{NAMESPACE_WINDOWS}}DependencyProperty.Register(
                                       nameof({{themeText}}Hovered{{fieldRoslyn.PropertyName}}),
                                       typeof({{fieldRoslyn.TypeName}}),
                                       typeof({{localTypeName}}),
-                                      new {{NAMESPACE_DP}}PropertyMetadata({{fieldRoslyn.Initial.InitialTextParse()}}, _innerRun{{themeText}}Hovered{{fieldRoslyn.PropertyName}}Changed));   
-                                   public static void _innerRun{{themeText}}Hovered{{fieldRoslyn.PropertyName}}Changed({{NAMESPACE_DP}}DependencyObject d, {{NAMESPACE_DP}}DependencyPropertyChangedEventArgs e)
+                                      new {{NAMESPACE_WINDOWS}}PropertyMetadata({{fieldRoslyn.Initial.InitialTextParse()}}, _innerRun{{themeText}}Hovered{{fieldRoslyn.PropertyName}}Changed));   
+                                   public static void _innerRun{{themeText}}Hovered{{fieldRoslyn.PropertyName}}Changed({{NAMESPACE_WINDOWS}}DependencyObject d, {{NAMESPACE_WINDOWS}}DependencyPropertyChangedEventArgs e)
                                    {
                                       if (d is {{localTypeName}} control && control.DataContext is {{vmTypeName}} viewModel)
                                       {
@@ -925,13 +1020,13 @@ namespace MinimalisticWPF.Generator
                                       get => ({{fieldRoslyn.TypeName}})GetValue({{themeText}}NoHovered{{fieldRoslyn.PropertyName}}Property);
                                       set => SetValue({{themeText}}NoHovered{{fieldRoslyn.PropertyName}}Property, value);
                                    }
-                                   public static readonly {{NAMESPACE_DP}}DependencyProperty {{themeText}}NoHovered{{fieldRoslyn.PropertyName}}Property =
-                                      {{NAMESPACE_DP}}DependencyProperty.Register(
+                                   public static readonly {{NAMESPACE_WINDOWS}}DependencyProperty {{themeText}}NoHovered{{fieldRoslyn.PropertyName}}Property =
+                                      {{NAMESPACE_WINDOWS}}DependencyProperty.Register(
                                       nameof({{themeText}}NoHovered{{fieldRoslyn.PropertyName}}),
                                       typeof({{fieldRoslyn.TypeName}}),
                                       typeof({{localTypeName}}),
-                                      new {{NAMESPACE_DP}}PropertyMetadata({{fieldRoslyn.Initial.InitialTextParse()}}, _innerRun{{themeText}}NoHovered{{fieldRoslyn.PropertyName}}Changed));   
-                                   public static void _innerRun{{themeText}}NoHovered{{fieldRoslyn.PropertyName}}Changed({{NAMESPACE_DP}}DependencyObject d, {{NAMESPACE_DP}}DependencyPropertyChangedEventArgs e)
+                                      new {{NAMESPACE_WINDOWS}}PropertyMetadata({{fieldRoslyn.Initial.InitialTextParse()}}, _innerRun{{themeText}}NoHovered{{fieldRoslyn.PropertyName}}Changed));   
+                                   public static void _innerRun{{themeText}}NoHovered{{fieldRoslyn.PropertyName}}Changed({{NAMESPACE_WINDOWS}}DependencyObject d, {{NAMESPACE_WINDOWS}}DependencyPropertyChangedEventArgs e)
                                    {
                                       if (d is {{localTypeName}} control && control.DataContext is {{vmTypeName}} viewModel)
                                       {
@@ -949,13 +1044,13 @@ namespace MinimalisticWPF.Generator
                                       get => ({{fieldRoslyn.TypeName}})GetValue(Hovered{{fieldRoslyn.PropertyName}}Property);
                                       set => SetValue(Hovered{{fieldRoslyn.PropertyName}}Property, value);
                                    }
-                                   public static readonly {{NAMESPACE_DP}}DependencyProperty Hovered{{fieldRoslyn.PropertyName}}Property =
-                                      {{NAMESPACE_DP}}DependencyProperty.Register(
+                                   public static readonly {{NAMESPACE_WINDOWS}}DependencyProperty Hovered{{fieldRoslyn.PropertyName}}Property =
+                                      {{NAMESPACE_WINDOWS}}DependencyProperty.Register(
                                       nameof(Hovered{{fieldRoslyn.PropertyName}}),
                                       typeof({{fieldRoslyn.TypeName}}),
                                       typeof({{localTypeName}}),
-                                      new {{NAMESPACE_DP}}PropertyMetadata({{fieldRoslyn.Initial.InitialTextParse()}}, _innerRunHovered{{fieldRoslyn.PropertyName}}Changed));   
-                                   private static void _innerRunHovered{{fieldRoslyn.PropertyName}}Changed({{NAMESPACE_DP}}DependencyObject d, {{NAMESPACE_DP}}DependencyPropertyChangedEventArgs e)
+                                      new {{NAMESPACE_WINDOWS}}PropertyMetadata({{fieldRoslyn.Initial.InitialTextParse()}}, _innerRunHovered{{fieldRoslyn.PropertyName}}Changed));   
+                                   private static void _innerRunHovered{{fieldRoslyn.PropertyName}}Changed({{NAMESPACE_WINDOWS}}DependencyObject d, {{NAMESPACE_WINDOWS}}DependencyPropertyChangedEventArgs e)
                                    {
                                       if (d is {{localTypeName}} control && control.DataContext is {{vmTypeName}} viewModel)
                                       {
@@ -969,13 +1064,13 @@ namespace MinimalisticWPF.Generator
                                       get => ({{fieldRoslyn.TypeName}})GetValue(Hovered{{fieldRoslyn.PropertyName}}Property);
                                       set => SetValue(NoHovered{{fieldRoslyn.PropertyName}}Property, value);
                                    }
-                                   public static readonly {{NAMESPACE_DP}}DependencyProperty NoHovered{{fieldRoslyn.PropertyName}}Property =
-                                      {{NAMESPACE_DP}}DependencyProperty.Register(
+                                   public static readonly {{NAMESPACE_WINDOWS}}DependencyProperty NoHovered{{fieldRoslyn.PropertyName}}Property =
+                                      {{NAMESPACE_WINDOWS}}DependencyProperty.Register(
                                       nameof(NoHovered{{fieldRoslyn.PropertyName}}),
                                       typeof({{fieldRoslyn.TypeName}}),
                                       typeof({{localTypeName}}),
-                                      new {{NAMESPACE_DP}}PropertyMetadata({{fieldRoslyn.Initial.InitialTextParse()}}, _innerRunNoHovered{{fieldRoslyn.PropertyName}}Changed));   
-                                   private static void _innerRunNoHovered{{fieldRoslyn.PropertyName}}Changed({{NAMESPACE_DP}}DependencyObject d, {{NAMESPACE_DP}}DependencyPropertyChangedEventArgs e)
+                                      new {{NAMESPACE_WINDOWS}}PropertyMetadata({{fieldRoslyn.Initial.InitialTextParse()}}, _innerRunNoHovered{{fieldRoslyn.PropertyName}}Changed));   
+                                   private static void _innerRunNoHovered{{fieldRoslyn.PropertyName}}Changed({{NAMESPACE_WINDOWS}}DependencyObject d, {{NAMESPACE_WINDOWS}}DependencyPropertyChangedEventArgs e)
                                    {
                                       if (d is {{localTypeName}} control && control.DataContext is {{vmTypeName}} viewModel)
                                       {
@@ -1014,13 +1109,13 @@ namespace MinimalisticWPF.Generator
                                       get => ({{fieldRoslyn.TypeName}})GetValue({{attName}}{{fieldRoslyn.PropertyName}}Property);
                                       set => SetValue({{attName}}{{fieldRoslyn.PropertyName}}Property, value);
                                    }
-                                   public static readonly {{NAMESPACE_DP}}DependencyProperty {{attName}}{{fieldRoslyn.PropertyName}}Property =
-                                      {{NAMESPACE_DP}}DependencyProperty.Register(
+                                   public static readonly {{NAMESPACE_WINDOWS}}DependencyProperty {{attName}}{{fieldRoslyn.PropertyName}}Property =
+                                      {{NAMESPACE_WINDOWS}}DependencyProperty.Register(
                                       nameof({{attName}}{{fieldRoslyn.PropertyName}}),
                                       typeof({{fieldRoslyn.TypeName}}),
                                       typeof({{localTypeName}}),
-                                      new {{NAMESPACE_DP}}PropertyMetadata({{fieldRoslyn.Initial.InitialTextParse()}}, _innerRun{{attName}}{{fieldRoslyn.PropertyName}}Changed));   
-                                   public static void _innerRun{{attName}}{{fieldRoslyn.PropertyName}}Changed({{NAMESPACE_DP}}DependencyObject d, {{NAMESPACE_DP}}DependencyPropertyChangedEventArgs e)
+                                      new {{NAMESPACE_WINDOWS}}PropertyMetadata({{fieldRoslyn.Initial.InitialTextParse()}}, _innerRun{{attName}}{{fieldRoslyn.PropertyName}}Changed));   
+                                   public static void _innerRun{{attName}}{{fieldRoslyn.PropertyName}}Changed({{NAMESPACE_WINDOWS}}DependencyObject d, {{NAMESPACE_WINDOWS}}DependencyPropertyChangedEventArgs e)
                                    {
                                       if (d is {{localTypeName}} control && control.DataContext is {{vmTypeName}} viewModel)
                                       {
@@ -1051,13 +1146,13 @@ namespace MinimalisticWPF.Generator
                                       get => ({{fieldRoslyn.TypeName}})GetValue({{fieldRoslyn.PropertyName}}Property);
                                       set => SetValue({{fieldRoslyn.PropertyName}}Property, value);
                                    }
-                                   public static readonly {{NAMESPACE_DP}}DependencyProperty {{fieldRoslyn.PropertyName}}Property =
-                                      {{NAMESPACE_DP}}DependencyProperty.Register(
+                                   public static readonly {{NAMESPACE_WINDOWS}}DependencyProperty {{fieldRoslyn.PropertyName}}Property =
+                                      {{NAMESPACE_WINDOWS}}DependencyProperty.Register(
                                       nameof({{fieldRoslyn.PropertyName}}),
                                       typeof({{fieldRoslyn.TypeName}}),
                                       typeof({{localTypeName}}),
-                                      new {{NAMESPACE_DP}}PropertyMetadata({{fieldRoslyn.Initial.InitialTextParse()}}, _innerRun{{fieldRoslyn.PropertyName}}Changed));   
-                                   public static void _innerRun{{fieldRoslyn.PropertyName}}Changed({{NAMESPACE_DP}}DependencyObject d, {{NAMESPACE_DP}}DependencyPropertyChangedEventArgs e)
+                                      new {{NAMESPACE_WINDOWS}}PropertyMetadata({{fieldRoslyn.Initial.InitialTextParse()}}, _innerRun{{fieldRoslyn.PropertyName}}Changed));   
+                                   public static void _innerRun{{fieldRoslyn.PropertyName}}Changed({{NAMESPACE_WINDOWS}}DependencyObject d, {{NAMESPACE_WINDOWS}}DependencyPropertyChangedEventArgs e)
                                    {
                                       if (d is {{localTypeName}} control && control.DataContext is {{vmTypeName}} viewModel)
                                       {
