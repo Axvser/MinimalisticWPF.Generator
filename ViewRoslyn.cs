@@ -398,7 +398,7 @@ namespace MinimalisticWPF.Generator
 
                               try
                               {
-                                 while (!newmonocts.Token.IsCancellationRequested)
+                                 while (IsActive && !newmonocts.Token.IsCancellationRequested)
                                  {
                                      Update();
                                      LateUpdate();
