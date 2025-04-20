@@ -382,17 +382,16 @@ namespace MinimalisticWPF.Generator
                                   {
                                       await _inner_Update();
                                   }
+                                  else
+                                  {
+                                      _innerCleanMonoToken();
+                                  }
                               }
                           }
 
                           private async Task _inner_Update()
                           {
-                              if(cts_mono != null)
-                              {
-                                 cts_mono.Cancel();
-                                 cts_mono.Dispose();
-                                 cts_mono = null;
-                              }
+                              _innerCleanMonoToken();
 
                               var newmonocts = new global::System.Threading.CancellationTokenSource();
                               cts_mono = newmonocts;
@@ -412,9 +411,7 @@ namespace MinimalisticWPF.Generator
                               }
                               finally
                               {
-                                  cts_mono?.Cancel();
-                                  cts_mono?.Dispose();
-                                  cts_mono = null;
+                                  if (global::System.Threading.Interlocked.CompareExchange(ref cts_mono, null, newmonocts) == newmonocts) newmonocts.Dispose();
                               }
                           }
 
@@ -422,6 +419,17 @@ namespace MinimalisticWPF.Generator
                           partial void Start();
                           partial void Update();
                           partial void LateUpdate();
+
+                          private void _innerCleanMonoToken()
+                          {
+                              var oldCts = Interlocked.Exchange(ref cts_mono, null);
+                              if (oldCts != null)
+                              {
+                                  try { oldCts.Cancel(); } catch { }
+                                  oldCts.Dispose();
+                              }
+                          }
+
                     """);
             }
 
