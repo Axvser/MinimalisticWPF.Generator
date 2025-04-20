@@ -398,6 +398,7 @@ namespace MinimalisticWPF.Generator
 
                               try
                               {
+                                 Start();
                                  while (IsActive && !newmonocts.Token.IsCancellationRequested)
                                  {
                                      Update();
@@ -1331,7 +1332,6 @@ namespace MinimalisticWPF.Generator
                 true => $$"""
                                 if (!isInDesign)
                                 {
-                                    Start();
                                     await _inner_Update();
                                 }
                     """,
