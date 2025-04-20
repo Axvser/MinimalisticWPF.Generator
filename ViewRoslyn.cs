@@ -398,7 +398,8 @@ namespace MinimalisticWPF.Generator
 
                               try
                               {
-                                 Start();
+                                 if(IsActive) Start();
+
                                  while (IsActive && !newmonocts.Token.IsCancellationRequested)
                                  {
                                      Update();
