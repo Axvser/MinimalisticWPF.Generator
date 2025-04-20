@@ -364,6 +364,8 @@ namespace MinimalisticWPF.Generator
             if (IsMono)
             {
                 builder.AppendLine($$"""
+                          private global::System.Threading.CancellationTokenSource? cts_mono = null;
+
                           private bool isactive = true;
                           public bool IsActive
                           {
@@ -385,11 +387,34 @@ namespace MinimalisticWPF.Generator
 
                           private async Task _inner_Update()
                           {
-                              while (IsActive)
+                              if(cts_mono != null)
                               {
-                                  Update();
-                                  LateUpdate();
-                                  await Task.Delay({{MonoSpan}});
+                                 cts_mono.Cancel();
+                                 cts_mono.Dispose();
+                                 cts_mono = null;
+                              }
+
+                              var newmonocts = new global::System.Threading.CancellationTokenSource();
+                              cts_mono = newmonocts;
+
+                              try
+                              {
+                                 while (!newmonocts.Token.IsCancellationRequested)
+                                 {
+                                     Update();
+                                     LateUpdate();
+                                     await Task.Delay({{MonoSpan}},newmonocts.Token);
+                                 }
+                              }
+                              catch (Exception ex)
+                              {
+                                  global::System.Diagnostics.Debug.WriteLine(ex.Message);
+                              }
+                              finally
+                              {
+                                  cts_mono?.Cancel();
+                                  cts_mono?.Dispose();
+                                  cts_mono = null;
                               }
                           }
 
