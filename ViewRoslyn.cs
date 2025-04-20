@@ -974,18 +974,21 @@ namespace MinimalisticWPF.Generator
                 {
                     foreach (var theme in themeGroup)
                     {
+                        var fullName = Symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+                        var typeName = propertySymbol.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+                        var initialText = AnalizeHelper.GetDefaultInitialText(propertySymbol.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat));
                         var hoveredName = $"{AnalizeHelper.ExtractThemeName(theme.Item2)}Hovered{hover}";
                         var nohoveredName = $"{AnalizeHelper.ExtractThemeName(theme.Item2)}NoHovered{hover}";
                         var dp_factory1 = new DependencyPropertyFactory(
-                            Symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
-                            propertySymbol.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+                            fullName,
+                            typeName,
                             hoveredName,
-                            $"{AnalizeHelper.GetDefaultInitialText(propertySymbol.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat))}");
+                            initialText);
                         var dp_factory2 = new DependencyPropertyFactory(
-                            Symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
-                            propertySymbol.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+                            fullName,
+                            typeName,
                             nohoveredName,
-                            $"{AnalizeHelper.GetDefaultInitialText(propertySymbol.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat))}");
+                            initialText);
                         dp_factory1.SetterBody.Add($$"""
                                   if(target.CurrentTheme == typeof({{theme.Item2}}))
                                         {
@@ -997,7 +1000,7 @@ namespace MinimalisticWPF.Generator
                                         }
                             """);
                         dp_factory2.SetterBody.Add($$"""
-                                  global::MinimalisticWPF.DynamicTheme.SetIsolatedValue(target,global::MinimalisticWPF.DynamicTheme.CurrentTheme,"{{TAG_PROXY}}{{propertySymbol.Name}}",newValue);
+                                  global::MinimalisticWPF.DynamicTheme.SetIsolatedValue(target,typeof({{theme.Item2}}),"{{TAG_PROXY}}{{propertySymbol.Name}}",newValue);
                             """);
                         dp_factory2.SetterBody.Add($$"""
                                   if(target.CurrentTheme == typeof({{theme.Item2}}))
@@ -1224,13 +1227,14 @@ namespace MinimalisticWPF.Generator
             builder.AppendLine("            var issetterExsit = setters?.Any() ?? false;");
             foreach (var property in PropertyTree.Where(p => Themes.Any(t => t.Item1 == p.Name)))
             {
+                var typeName = property.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
                 builder.AppendLine($"""                                  
                                     {property.Name} = issetterExsit ? 
                                     ( 
                                         setters.Contains({property.Name}Property) ? 
                                         {property.Name} : 
-                                        ({property.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)})(global::MinimalisticWPF.DynamicTheme.GetIsolatedValue(this,global::MinimalisticWPF.DynamicTheme.CurrentTheme,"{TAG_PROXY}{property.Name}")??{property.Name})
-                                    ) : ({property.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)})(global::MinimalisticWPF.DynamicTheme.GetIsolatedValue(this,global::MinimalisticWPF.DynamicTheme.CurrentTheme,"{TAG_PROXY}{property.Name}")??{property.Name});
+                                        ({typeName})(global::MinimalisticWPF.DynamicTheme.GetIsolatedValue(this,global::MinimalisticWPF.DynamicTheme.CurrentTheme,"{TAG_PROXY}{property.Name}")??{property.Name})
+                                    ) : ({typeName})(global::MinimalisticWPF.DynamicTheme.GetIsolatedValue(this,global::MinimalisticWPF.DynamicTheme.CurrentTheme,"{TAG_PROXY}{property.Name}")??{property.Name});
                         """);
             }
             foreach (var hover in Hovers)
@@ -1244,7 +1248,7 @@ namespace MinimalisticWPF.Generator
                     builder.AppendLine($"""                                  
                                     {hoveredName} = issetterExsit ? 
                                     ( 
-                                        setters.Contains({propertySymbol.Name}Property) ? 
+                                        setters.Contains({hoveredName}Property) ? 
                                         {hoveredName} : 
                                         {propertySymbol.Name}
                                     ) : {propertySymbol.Name};
@@ -1253,7 +1257,7 @@ namespace MinimalisticWPF.Generator
                     builder.AppendLine($"""                                  
                                     {nohoveredName} = issetterExsit ? 
                                     ( 
-                                        setters.Contains({propertySymbol.Name}Property) ? 
+                                        setters.Contains({nohoveredName}Property) ? 
                                         {nohoveredName} : 
                                         {propertySymbol.Name}
                                     ) : {propertySymbol.Name};
@@ -1263,23 +1267,25 @@ namespace MinimalisticWPF.Generator
                 {
                     foreach (var theme in themeGroup)
                     {
-                        var hoveredName = $"{AnalizeHelper.ExtractThemeName(theme.Item2)}Hovered{hover}";
+                        var themeName = AnalizeHelper.ExtractThemeName(theme.Item2);
+                        var typeName = propertySymbol.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+                        var hoveredName = $"{themeName}Hovered{hover}";
                         builder.AppendLine($"""                                  
                                     {hoveredName} = issetterExsit ? 
                                     ( 
-                                        setters.Contains({propertySymbol.Name}Property) ? 
+                                        setters.Contains({hoveredName}Property) ? 
                                         {hoveredName} : 
-                                        ({propertySymbol.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)})(global::MinimalisticWPF.DynamicTheme.GetIsolatedValue(this,global::MinimalisticWPF.DynamicTheme.CurrentTheme,"{TAG_PROXY}{propertySymbol.Name}")??{propertySymbol.Name})
-                                    ) : ({propertySymbol.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)})(global::MinimalisticWPF.DynamicTheme.GetIsolatedValue(this,global::MinimalisticWPF.DynamicTheme.CurrentTheme,"{TAG_PROXY}{propertySymbol.Name}")??{propertySymbol.Name});
+                                        ({typeName})(global::MinimalisticWPF.DynamicTheme.GetIsolatedValue(this,typeof({theme.Item2}),"{TAG_PROXY}{propertySymbol.Name}")??{propertySymbol.Name})
+                                    ) : ({typeName})(global::MinimalisticWPF.DynamicTheme.GetIsolatedValue(this,typeof({theme.Item2}),"{TAG_PROXY}{propertySymbol.Name}")??{propertySymbol.Name});
                         """);
-                        var nohoveredName = $"{AnalizeHelper.ExtractThemeName(theme.Item2)}NoHovered{hover}";
+                        var nohoveredName = $"{themeName}NoHovered{hover}";
                         builder.AppendLine($"""                                  
                                     {nohoveredName} = issetterExsit ? 
                                     ( 
-                                        setters.Contains({propertySymbol.Name}Property) ? 
+                                        setters.Contains({nohoveredName}Property) ? 
                                         {nohoveredName} : 
-                                        ({propertySymbol.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)})(global::MinimalisticWPF.DynamicTheme.GetIsolatedValue(this,global::MinimalisticWPF.DynamicTheme.CurrentTheme,"{TAG_PROXY}{propertySymbol.Name}")??{propertySymbol.Name})
-                                    ) : ({propertySymbol.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)})(global::MinimalisticWPF.DynamicTheme.GetIsolatedValue(this,global::MinimalisticWPF.DynamicTheme.CurrentTheme,"{TAG_PROXY}{propertySymbol.Name}")??{propertySymbol.Name});
+                                        ({typeName})(global::MinimalisticWPF.DynamicTheme.GetIsolatedValue(this,typeof({theme.Item2}),"{TAG_PROXY}{propertySymbol.Name}")??{propertySymbol.Name})
+                                    ) : ({typeName})(global::MinimalisticWPF.DynamicTheme.GetIsolatedValue(this,typeof({theme.Item2}),"{TAG_PROXY}{propertySymbol.Name}")??{propertySymbol.Name});
                         """);
                     }
                 }
