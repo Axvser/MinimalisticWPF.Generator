@@ -798,7 +798,7 @@ namespace MinimalisticWPF.Generator
                        public bool IsHovered
                        {
                           get => _isHovered;
-                          protected set
+                          private set
                           {
                              if(_isHovered != value)
                              {
@@ -819,7 +819,7 @@ namespace MinimalisticWPF.Generator
                        public bool IsHovered
                        {
                           get => _isHovered;
-                          protected set
+                          private set
                           {
                              if(_isHovered != value)
                              {
@@ -838,7 +838,7 @@ namespace MinimalisticWPF.Generator
                       public bool IsHoverChanging
                       {
                          get => _isHoverChanging;
-                         protected set
+                         private set
                          {
                             if(_isHoverChanging != value)
                             {
@@ -858,11 +858,11 @@ namespace MinimalisticWPF.Generator
                 """);
 
             sourceBuilder.AppendLine();
-            sourceBuilder.AppendLine("      public global::MinimalisticWPF.TransitionSystem.TransitionScheduler[] _runningHovers { get; protected set; } = global::System.Array.Empty<global::MinimalisticWPF.TransitionSystem.TransitionScheduler>();");
+            sourceBuilder.AppendLine("      public global::MinimalisticWPF.TransitionSystem.TransitionScheduler[] _runningHovers { get; private set; } = global::System.Array.Empty<global::MinimalisticWPF.TransitionSystem.TransitionScheduler>();");
             sourceBuilder.AppendLine();
 
             //生成主题修改后的动画效果更新函数
-            sourceBuilder.AppendLine("      protected virtual void UpdateHoverState()");
+            sourceBuilder.AppendLine("      private void UpdateHoverState()");
             sourceBuilder.AppendLine("      {");
             if (IsDynamicTheme)
             {
@@ -871,13 +871,16 @@ namespace MinimalisticWPF.Generator
                 sourceBuilder.AppendLine("             _isNewTheme = false;");
                 foreach (var propertySymbol in hoverables)
                 {
-                    var attributes = themeGroups.FirstOrDefault(tg => tg.Key == propertySymbol.Name);
-                    if (attributes is null) continue;
-
-                    if (IsDynamicTheme)
+                    var hasAttributes = themeGroups.Any(tg => tg.Key == propertySymbol.Name);
+                    if (hasAttributes)
                     {
                         sourceBuilder.AppendLine($"             HoveredTransition.SetProperty(b => b.{propertySymbol.Name}, {propertySymbol.Name}_SelectThemeValue_Hovered(CurrentTheme.Name));");
                         sourceBuilder.AppendLine($"             NoHoveredTransition.SetProperty(b => b.{propertySymbol.Name}, {propertySymbol.Name}_SelectThemeValue_NoHovered(CurrentTheme.Name));");
+                    }
+                    else
+                    {
+                        sourceBuilder.AppendLine($"             HoveredTransition.SetProperty(b => b.{propertySymbol.Name}, Hovered{propertySymbol.Name});");
+                        sourceBuilder.AppendLine($"             NoHoveredTransition.SetProperty(b => b.{propertySymbol.Name}, NoHovered{propertySymbol.Name});");
                     }
                 }
                 sourceBuilder.AppendLine("         }");
@@ -892,35 +895,6 @@ namespace MinimalisticWPF.Generator
                 """);
             sourceBuilder.AppendLine("      }");
             sourceBuilder.AppendLine();
-            sourceBuilder.AppendLine("      protected virtual void UpdateHoverState(global::MinimalisticWPF.TransitionSystem.TransitionParams transitionParam)");
-            sourceBuilder.AppendLine("      {");
-            if (IsDynamicTheme)
-            {
-                sourceBuilder.AppendLine("         if(_isNewTheme && CurrentTheme != null)");
-                sourceBuilder.AppendLine("         {");
-                sourceBuilder.AppendLine("             _isNewTheme = false;");
-                foreach (var propertySymbol in hoverables)
-                {
-                    var attributes = themeGroups.FirstOrDefault(tg => tg.Key == propertySymbol.Name);
-                    if (attributes is null) continue;
-
-                    if (IsDynamicTheme)
-                    {
-                        sourceBuilder.AppendLine($"             HoveredTransition.SetProperty(b => b.{propertySymbol.Name}, {propertySymbol.Name}_SelectThemeValue_Hovered(CurrentTheme.Name));");
-                        sourceBuilder.AppendLine($"             NoHoveredTransition.SetProperty(b => b.{propertySymbol.Name}, {propertySymbol.Name}_SelectThemeValue_NoHovered(CurrentTheme.Name));");
-                    }
-                }
-                sourceBuilder.AppendLine("         }");
-            }
-            sourceBuilder.AppendLine($$"""
-                         var copy = _runningHovers;
-                         foreach (var item in copy)
-                         {
-                            item.Dispose();
-                         }
-                         this.BeginTransition(IsHovered ? HoveredTransition : NoHoveredTransition, transitionParam);
-                """);
-            sourceBuilder.AppendLine("      }");
 
             //生成Hovered值选择器
             foreach (var propertySymbol in hoverables)
@@ -930,7 +904,7 @@ namespace MinimalisticWPF.Generator
 
                 if (IsDynamicTheme)
                 {
-                    sourceBuilder.AppendLine($"      protected {propertySymbol.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)} {propertySymbol.Name}_SelectThemeValue_Hovered(string themeName)");
+                    sourceBuilder.AppendLine($"      private {propertySymbol.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)} {propertySymbol.Name}_SelectThemeValue_Hovered(string themeName)");
                     sourceBuilder.AppendLine("      {");
                     sourceBuilder.AppendLine($"         switch(themeName)");
                     sourceBuilder.AppendLine("         {");
@@ -954,7 +928,7 @@ namespace MinimalisticWPF.Generator
 
                 if (IsDynamicTheme)
                 {
-                    sourceBuilder.AppendLine($"      protected {propertySymbol.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)} {propertySymbol.Name}_SelectThemeValue_NoHovered(string themeName)");
+                    sourceBuilder.AppendLine($"      private {propertySymbol.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)} {propertySymbol.Name}_SelectThemeValue_NoHovered(string themeName)");
                     sourceBuilder.AppendLine("      {");
                     sourceBuilder.AppendLine($"         switch(themeName)");
                     sourceBuilder.AppendLine("         {");
