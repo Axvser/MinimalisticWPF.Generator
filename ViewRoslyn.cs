@@ -1001,7 +1001,19 @@ namespace MinimalisticWPF.Generator
                         nohoveredName,
                         $"{AnalizeHelper.GetDefaultInitialText(propertySymbol.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat))}");
                     dp_factory1.SetterBody.Add($"      target.HoveredTransition.SetProperty(x => x.{propertySymbol.Name},newValue);");
+                    dp_factory1.SetterBody.Add($$"""
+                              if(!target.IsHoverChanging && target.IsHovered && !target.IsThemeChanging)
+                              {
+                                 target.{{hover}} = newValue;
+                              }
+                        """);
                     dp_factory2.SetterBody.Add($"      target.NoHoveredTransition.SetProperty(x => x.{propertySymbol.Name},newValue);");
+                    dp_factory2.SetterBody.Add($$"""
+                              if(!target.IsHoverChanging && !target.IsHovered && !target.IsThemeChanging)
+                              {
+                                 target.{{hover}} = newValue;
+                              }
+                        """);
                     factories.Add(dp_factory1);
                     factories.Add(dp_factory2);
                 }
@@ -1277,28 +1289,7 @@ namespace MinimalisticWPF.Generator
                 var themeGroup = themeGroups.FirstOrDefault(t => t.Key == hover);
                 var propertySymbol = PropertyTree.FirstOrDefault(p => p.Name == hover);
                 if (propertySymbol is null) continue;
-                if (themeGroup is null)
-                {
-                    var hoveredName = $"Hovered{hover}";
-                    builder.AppendLine($"""                                  
-                                    {hoveredName} = issetterExsit ? 
-                                    ( 
-                                        setters.Contains({hoveredName}Property) ? 
-                                        {hoveredName} : 
-                                        {propertySymbol.Name}
-                                    ) : {propertySymbol.Name};
-                        """);
-                    var nohoveredName = $"NoHovered{hover}";
-                    builder.AppendLine($"""                                  
-                                    {nohoveredName} = issetterExsit ? 
-                                    ( 
-                                        setters.Contains({nohoveredName}Property) ? 
-                                        {nohoveredName} : 
-                                        {propertySymbol.Name}
-                                    ) : {propertySymbol.Name};
-                        """);
-                }
-                else
+                if (themeGroup is not null)
                 {
                     foreach (var theme in themeGroup)
                     {
@@ -1312,7 +1303,7 @@ namespace MinimalisticWPF.Generator
                                         {hoveredName} : 
                                         ({typeName})(global::MinimalisticWPF.DynamicTheme.GetIsolatedValue(this,typeof({theme.Item2}),"{TAG_PROXY}{propertySymbol.Name}")??{propertySymbol.Name})
                                     ) : ({typeName})(global::MinimalisticWPF.DynamicTheme.GetIsolatedValue(this,typeof({theme.Item2}),"{TAG_PROXY}{propertySymbol.Name}")??{propertySymbol.Name});
-                        """);
+                         """);
                         var nohoveredName = $"{themeName}NoHovered{hover}";
                         builder.AppendLine($"""                                  
                                     {nohoveredName} = issetterExsit ? 
@@ -1321,7 +1312,7 @@ namespace MinimalisticWPF.Generator
                                         {nohoveredName} : 
                                         ({typeName})(global::MinimalisticWPF.DynamicTheme.GetIsolatedValue(this,typeof({theme.Item2}),"{TAG_PROXY}{propertySymbol.Name}")??{propertySymbol.Name})
                                     ) : ({typeName})(global::MinimalisticWPF.DynamicTheme.GetIsolatedValue(this,typeof({theme.Item2}),"{TAG_PROXY}{propertySymbol.Name}")??{propertySymbol.Name});
-                        """);
+                         """);
                     }
                 }
             }
