@@ -875,6 +875,11 @@ namespace MinimalisticWPF.Generator
                         sourceBuilder.AppendLine($"             HoveredTransition.SetProperty(b => b.{propertySymbol.Name}, {propertySymbol.Name}_SelectThemeValue_Hovered(CurrentTheme.Name));");
                         sourceBuilder.AppendLine($"             NoHoveredTransition.SetProperty(b => b.{propertySymbol.Name}, {propertySymbol.Name}_SelectThemeValue_NoHovered(CurrentTheme.Name));");
                     }
+                    else
+                    {
+                        sourceBuilder.AppendLine($"             HoveredTransition.SetProperty(b => b.{propertySymbol.Name}, Hovered{propertySymbol.Name});");
+                        sourceBuilder.AppendLine($"             NoHoveredTransition.SetProperty(b => b.{propertySymbol.Name}, NoHovered{propertySymbol.Name});");
+                    }
                 }
                 sourceBuilder.AppendLine("         }");
             }
@@ -1285,6 +1290,31 @@ namespace MinimalisticWPF.Generator
                          """);
                     }
                 }
+                else
+                {
+                    var hoveredName = $"Hovered{hover}";
+                    builder.AppendLine($"""                                  
+                                    {hoveredName} = issetterExsit ? 
+                                    ( 
+                                        setters.Contains({hoveredName}Property) ? 
+                                        {hoveredName} : 
+                                        {propertySymbol.Name}
+                                    ) : {propertySymbol.Name};
+                         """);
+                    var nohoveredName = $"NoHovered{hover}";
+                    builder.AppendLine($"""                                  
+                                    {nohoveredName} = issetterExsit ? 
+                                    ( 
+                                        setters.Contains({nohoveredName}Property) ? 
+                                        {nohoveredName} : 
+                                        {propertySymbol.Name}
+                                    ) : {propertySymbol.Name};
+                         """);
+                }
+            }
+            if (IsHover)
+            {
+                builder.AppendLine("            ReLoadHoverTransition();");
             }
         }
         private string GetMonoUpdateBody()
