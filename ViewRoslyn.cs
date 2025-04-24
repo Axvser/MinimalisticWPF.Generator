@@ -1310,6 +1310,7 @@ namespace MinimalisticWPF.Generator
                                         {propertySymbol.Name}
                                     ) : {propertySymbol.Name};
                          """);
+                    builder.AppendLine($"{propertySymbol.Name} = {nohoveredName};");
                 }
             }
             if (IsHover)
