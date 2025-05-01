@@ -10,44 +10,18 @@ namespace MinimalisticWPF.Generator
 {
     internal class ViewModelRoslyn : ClassRoslyn
     {
-        const string NAMESPACE_MVVM = "global::System.ComponentModel.";
+        private const string NAMESPACE_MVVM = "global::System.ComponentModel.";
+        const string PUBLIC = "public";
 
         internal ViewModelRoslyn(ClassDeclarationSyntax classDeclarationSyntax, INamedTypeSymbol namedTypeSymbol, Compilation compilation) : base(classDeclarationSyntax, namedTypeSymbol, compilation)
         {
             IsViewModel = AnalizeHelper.IsViewModelClass(Symbol, out var vmfields);
             FieldRoslyns = vmfields.Select(field => new FieldRoslyn(field));
-            ReadModelConfigParams(namedTypeSymbol, compilation);
         }
 
         public bool IsViewModel { get; set; } = false;
 
         public IEnumerable<FieldRoslyn> FieldRoslyns { get; set; } = [];
-
-        public string ModelTypeName { get; set; } = string.Empty;
-        public string ModelReaderName { get; set; } = string.Empty;
-        public string[] ModelPropertyNames { get; set; } = [];
-        private void ReadModelConfigParams(INamedTypeSymbol classSymbol, Compilation compilation)
-        {
-            var attributeData = classSymbol.GetAttributes()
-                .FirstOrDefault(ad => ad.AttributeClass?.Name == "ModelConfigAttribute");
-            if (attributeData != null)
-            {
-                ModelReaderName = (string)attributeData.ConstructorArguments[0].Value!;
-                var validation = (string)attributeData.ConstructorArguments[1].Value!;
-                var target = AnalizeHelper.FindTargetTypeSymbol(compilation, ModelReaderName, validation);
-
-                if (target != null)
-                {
-                    ModelTypeName = target.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-                    ModelPropertyNames = target.GetMembers().OfType<IPropertySymbol>().Select(s => s.Name).ToArray();
-                }
-                else
-                {
-                    // 处理未找到的情况
-                    throw new InvalidOperationException($"未找到类型：{ModelReaderName}（命名空间验证：{validation}）");
-                }
-            }
-        }
 
         public string Generate()
         {
@@ -56,12 +30,7 @@ namespace MinimalisticWPF.Generator
             builder.AppendLine(GenerateUsing());
             builder.AppendLine(GenerateNamespace());
             builder.AppendLine(GeneratePartialClass());
-            builder.AppendLine(GenerateConstructor());
             builder.AppendLine(GenerateIPC());
-            builder.AppendLine(GenerateITA());
-            builder.AppendLine(GenerateInitialize());
-            builder.AppendLine(GenerateModelReader());
-            builder.AppendLine(GenerateHoverControl());
             builder.AppendLine(GenerateEnd());
 
             return builder.ToString();
@@ -75,14 +44,11 @@ namespace MinimalisticWPF.Generator
             if (IsViewModel)
             {
                 list.Add($"{NAMESPACE_MVVM}INotifyPropertyChanged");
+                list.Add($"{NAMESPACE_MVVM}INotifyPropertyChanging");
             }
             if (IsAop)
             {
                 list.Add($"{NAMESPACE_AOP}{AnalizeHelper.GetInterfaceName(Syntax)}");
-            }
-            if (IsDynamicTheme)
-            {
-                list.Add($"{NAMESPACE_ITHEME}IThemeApplied");
             }
             if (list.Count > 0)
             {
@@ -104,479 +70,46 @@ namespace MinimalisticWPF.Generator
 
             return sourceBuilder.ToString();
         }
-        public string GenerateITA()
-        {
-            if (!IsDynamicTheme) return string.Empty;
-
-            var isHover = FieldRoslyns.Any(f => f.CanHover);
-
-            StringBuilder sourceBuilder = new();
-            if (isHover)
-            {
-                sourceBuilder.AppendLine("      public global::MinimalisticWPF.TransitionSystem.TransitionScheduler[] _runningHovers { get; protected set; } = global::System.Array.Empty<global::MinimalisticWPF.TransitionSystem.TransitionScheduler>();");
-            }
-            sourceBuilder.AppendLine("      private bool _isNewTheme = true;");
-            sourceBuilder.AppendLine("      private global::System.Type? _currentTheme = null;");
-            sourceBuilder.AppendLine("      public bool IsThemeChanging { get; set; } = false;");
-            sourceBuilder.AppendLine($$"""
-                      public global::System.Type? CurrentTheme
-                      {
-                         get => _currentTheme;
-                         set
-                         {
-                            if(value == null || value == _currentTheme) return;
-                            _currentTheme = value;
-                            _isNewTheme = true;
-                         }
-                      }
-                """);
-            sourceBuilder.AppendLine("      public void RunThemeChanging(global::System.Type? oldTheme, global::System.Type newTheme)");
-            sourceBuilder.AppendLine("      {");
-            sourceBuilder.AppendLine("         if(newTheme == oldTheme) return;");
-            sourceBuilder.AppendLine("         OnThemeChanging(oldTheme ,newTheme);");
-            sourceBuilder.AppendLine("      }");
-            sourceBuilder.AppendLine("      public void RunThemeChanged(global::System.Type? oldTheme, global::System.Type newTheme)");
-            sourceBuilder.AppendLine("      {");
-            if (isHover)
-            {
-                sourceBuilder.AppendLine("         UpdateHoverState();");
-            }
-            sourceBuilder.AppendLine("         if(newTheme == oldTheme) return;");
-            sourceBuilder.AppendLine("         OnThemeChanged(oldTheme ,newTheme);");
-            sourceBuilder.AppendLine("      }");
-            sourceBuilder.AppendLine("      partial void OnThemeChanging(global::System.Type? oldTheme, global::System.Type newTheme);");
-            sourceBuilder.AppendLine("      partial void OnThemeChanged(global::System.Type? oldTheme, global::System.Type newTheme);");
-            return sourceBuilder.ToString();
-        }
-        public string GenerateConstructor()
-        {
-            var acc = AnalizeHelper.GetAccessModifier(Symbol);
-
-            var methods = Symbol.GetMembers()
-                .OfType<IMethodSymbol>()
-                .Where(m => m.GetAttributes().Any(att => att.AttributeClass?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == $"{NAMESPACE_THEME}ConstructorAttribute"))
-                .ToList();
-
-            StringBuilder builder = new();
-            var strAop = $"{NAMESPACE_AOP}{AnalizeHelper.GetInterfaceName(Syntax)}";
-            if (IsAop)
-            {
-                builder.AppendLine($$"""
-                                           public {{strAop}} Proxy { get; private set; }
-                                     """);
-                builder.AppendLine();
-            }
-
-            builder.AppendLine($"      {acc} {Symbol.Name} ()");
-            builder.AppendLine("      {");
-            if (IsAop)
-            {
-                builder.AppendLine($"         Proxy = this.CreateProxy<{strAop}>();");
-            }
-            if (IsDynamicTheme)
-            {
-                builder.AppendLine($"         {NAMESPACE_THEME}DynamicTheme.Awake(this);");
-            }
-            if (FieldRoslyns.Any(f => f.CanHover))
-            {
-                builder.AppendLine($"          HoveredTransition.SetParams(TransitionParams.Hover);");
-                builder.AppendLine($"          NoHoveredTransition.SetParams(TransitionParams.Hover);");
-            }
-            foreach (var method in methods.Where(m => !m.Parameters.Any()))
-            {
-                builder.AppendLine($"         {method.Name}();");
-            }
-            if (FieldRoslyns.Any(f => f.CanHover))
-            {
-                builder.AppendLine($$"""
-                         HoveredTransition.TransitionParams.Start += () =>
-                         {
-                             IsHoverChanging = true;
-                         };
-                         HoveredTransition.TransitionParams.Completed += () =>
-                         {
-                             IsHoverChanging = false;
-                         };
-                         NoHoveredTransition.TransitionParams.Start += () =>
-                         {
-                             IsHoverChanging = true;
-                         };
-                         NoHoveredTransition.TransitionParams.Completed += () =>
-                         {
-                             IsHoverChanging = false;
-                         };
-                """);
-            }
-
-            builder.AppendLine("      }");
-
-            var groupedMethods = methods.Where(m => m.Parameters.Any()).GroupBy(m =>
-                string.Join(",", m.Parameters.Select(p => p.Type.ToDisplayString())));
-
-            foreach (var group in groupedMethods)
-            {
-                var parameters = group.Key.Split(',');
-                var parameterList = string.Join(", ", group.First().Parameters.Select(p => $"{p.Type.ToDisplayString()} {p.Name}"));
-                var callParameters = string.Join(", ", group.First().Parameters.Select(p => p.Name));
-
-                builder.AppendLine();
-                builder.AppendLine($"      {acc} {Symbol.Name} ({parameterList})");
-                builder.AppendLine("      {");
-                if (IsAop)
-                {
-                    builder.AppendLine($"         Proxy = this.CreateProxy<{strAop}>();");
-                }
-                if (IsDynamicTheme)
-                {
-                    builder.AppendLine($"         {NAMESPACE_THEME}DynamicTheme.Awake(this);");
-                }
-                if (FieldRoslyns.Any(f => f.CanHover))
-                {
-                    builder.AppendLine($"          HoveredTransition.SetParams(TransitionParams.Hover);");
-                    builder.AppendLine($"          NoHoveredTransition.SetParams(TransitionParams.Hover);");
-                }
-                foreach (var method in group)
-                {
-                    builder.AppendLine($"         {method.Name}({callParameters});");
-                }
-                if (FieldRoslyns.Any(f => f.CanHover))
-                {
-                    builder.AppendLine($$"""
-                         HoveredTransition.TransitionParams.Start += () =>
-                         {
-                             IsHoverChanging = true;
-                         };
-                         HoveredTransition.TransitionParams.Completed += () =>
-                         {
-                             IsHoverChanging = false;
-                         };
-                         NoHoveredTransition.TransitionParams.Start += () =>
-                         {
-                             IsHoverChanging = true;
-                         };
-                         NoHoveredTransition.TransitionParams.Completed += () =>
-                         {
-                             IsHoverChanging = false;
-                         };
-                """);
-                }
-                builder.AppendLine("      }");
-            }
-
-            return builder.ToString();
-        }
         public string GenerateIPC()
         {
             StringBuilder sourceBuilder = new();
             string source = $$"""
                                     public event {{NAMESPACE_MVVM}}PropertyChangedEventHandler? PropertyChanged;
+                                    public event {{NAMESPACE_MVVM}}PropertyChangingEventHandler? PropertyChanging;
+                                    public void OnPropertyChanging(string propertyName)
+                                    {
+                                       PropertyChanging?.Invoke(this, new {{NAMESPACE_MVVM}}PropertyChangingEventArgs(propertyName));
+                                    }
                                     public void OnPropertyChanged(string propertyName)
                                     {
                                        PropertyChanged?.Invoke(this, new {{NAMESPACE_MVVM}}PropertyChangedEventArgs(propertyName));
                                     }
+
                               """;
             sourceBuilder.AppendLine(source);
 
             foreach (var field in FieldRoslyns)
             {
-                var factory = new PropertyFactory("public", field.TypeName, field.FieldName, field.PropertyName);
-                factory.AttributeBody = field.ThemeAttributes;
-                factory.SetterBody.Add($"OnPropertyChanged(nameof({field.PropertyName}));");
+                var factory = new PropertyFactory(field, PUBLIC, false);
+                var intercept = field.SetterValidation switch
+                {
+                    1 => $"if (!{field.FieldName}?.Equals(value) ?? false) return;",
+                    2 => $"if (!CanUpdate{field.PropertyName}(old,value)) return;",
+                    _ => string.Empty
+                };
+                var interceptmethod = field.SetterValidation switch
+                {
+                    2 => $"      private partial bool CanUpdate{field.PropertyName}({field.TypeName} oldValue, {field.TypeName} newValue);",
+                    _ => string.Empty
+                };
+                factory.SetteringBody.Add(intercept);
+                factory.SetteringBody.Add($"OnPropertyChanging(nameof({field.PropertyName}));");
+                factory.SetteredBody.Add($"OnPropertyChanged(nameof({field.PropertyName}));");
                 sourceBuilder.AppendLine(factory.Generate());
+                sourceBuilder.AppendLine(interceptmethod);
                 sourceBuilder.AppendLine();
             }
 
-            return sourceBuilder.ToString();
-        }
-        public string GenerateInitialize()
-        {
-            var sourceBuilder = new StringBuilder();
-
-            foreach (var fieldRoslyn in FieldRoslyns)
-            {
-                sourceBuilder.AppendLine(fieldRoslyn.GenerateInitializeFunction(Symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)));
-            }
-
-            return sourceBuilder.ToString();
-        }
-        public string GenerateHoverControl()
-        {
-            var hoverables = FieldRoslyns.Where(fr => fr.CanHover).ToArray();
-
-            if (hoverables.Length < 1) return string.Empty;
-
-            StringBuilder sourceBuilder = new();
-
-            if (IsDynamicTheme)
-            {
-                sourceBuilder.AppendLine($$"""
-                      private bool _isHovered = false;
-                      public bool IsHovered
-                      {
-                         get => _isHovered;
-                         set
-                         {
-                            if(_isHovered != value)
-                            {
-                               _isHovered = value;
-                               if (!IsThemeChanging)
-                               {
-                                   UpdateHoverState();
-                               }
-                            }
-                         }
-                      }
-                """);
-            }
-            else
-            {
-                sourceBuilder.AppendLine($$"""
-                      private bool _isHovered = false;
-                      public bool IsHovered
-                      {
-                         get => _isHovered;
-                         set
-                         {
-                            if(_isHovered != value)
-                            {
-                               _isHovered = value;
-                               UpdateHoverState();
-                            }
-                         }
-                      }
-                """);
-            }
-
-            sourceBuilder.AppendLine();
-
-            sourceBuilder.AppendLine($$"""
-                      private bool _isHoverChanging = false;
-                      public bool IsHoverChanging
-                      {
-                         get => _isHoverChanging;
-                         set
-                         {
-                            if(_isHoverChanging != value)
-                            {
-                               _isHoverChanging = value;
-                            }
-                         }
-                      }
-                """);
-
-            sourceBuilder.AppendLine();
-
-            sourceBuilder.AppendLine($$"""
-                      public {{NAMESPACE_TRANSITOIN}}TransitionBoard<{{Symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}}> HoveredTransition { get; set; } = {{NAMESPACE_TRANSITOIN}}Transition.Create<{{Symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}}>();
-                """);
-            sourceBuilder.AppendLine($$"""
-                      public {{NAMESPACE_TRANSITOIN}}TransitionBoard<{{Symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}}> NoHoveredTransition { get; set; } = {{NAMESPACE_TRANSITOIN}}Transition.Create<{{Symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}}>()
-                """);
-            for (var i = 0; i < hoverables.Length; i++)
-            {
-                if (!string.IsNullOrEmpty(hoverables[i].Initial))
-                {
-                    sourceBuilder.AppendLine($"         .SetProperty(x => x.{hoverables[i].PropertyName}, {hoverables[i].Initial.Replace("=", string.Empty).TrimStart()})");
-                }
-            }
-            sourceBuilder.Append("         ;");
-
-            sourceBuilder.AppendLine();
-
-            // 不同主题下的悬停控制属性
-            foreach (var fieldRoslyn in hoverables)
-            {
-                if (IsDynamicTheme && fieldRoslyn.ThemeAttributes.Count > 0)
-                {
-                    foreach (var (fullthemeText, themeText) in fieldRoslyn.ThemeAttributes.Select(t => (t.Split('(')[0], AnalizeHelper.ExtractThemeName(t))))
-                    {
-                        sourceBuilder.AppendLine($"      private {fieldRoslyn.TypeName} _{themeText}Hovered{fieldRoslyn.PropertyName} = ({fieldRoslyn.TypeName}){NAMESPACE_THEME}DynamicTheme.GetSharedValue(typeof({Symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}),typeof({fullthemeText}),\"{fieldRoslyn.PropertyName}\");");
-                        sourceBuilder.AppendLine($"      public {fieldRoslyn.TypeName} {themeText}Hovered{fieldRoslyn.PropertyName}");
-                        sourceBuilder.AppendLine("      {");
-                        sourceBuilder.AppendLine($"         get => _{themeText}Hovered{fieldRoslyn.PropertyName};");
-                        sourceBuilder.AppendLine("         set");
-                        sourceBuilder.AppendLine("         {");
-                        sourceBuilder.AppendLine($"            var oldValue = _{themeText}Hovered{fieldRoslyn.PropertyName};");
-                        sourceBuilder.AppendLine($"            _{themeText}Hovered{fieldRoslyn.PropertyName} = value;");
-                        sourceBuilder.AppendLine($$"""
-                                        if(CurrentTheme == typeof({{fullthemeText}}))
-                                        {
-                                           HoveredTransition.SetProperty(x => x.{{fieldRoslyn.PropertyName}}, value);
-                                           if(!IsHoverChanging && IsHovered && !IsThemeChanging)
-                                           {
-                                              {{fieldRoslyn.PropertyName}} = value;
-                                           }
-                                        }
-                            """);
-                        sourceBuilder.AppendLine($"            On{themeText}Hovered{fieldRoslyn.PropertyName}Changed(oldValue,value);");
-                        sourceBuilder.AppendLine("         }");
-                        sourceBuilder.AppendLine("      }");
-                        sourceBuilder.AppendLine($"      partial void On{themeText}Hovered{fieldRoslyn.PropertyName}Changed({fieldRoslyn.TypeName} oldValue,{fieldRoslyn.TypeName} newValue);");
-                        sourceBuilder.AppendLine();
-
-                        sourceBuilder.AppendLine($"      private {fieldRoslyn.TypeName} _{themeText}NoHovered{fieldRoslyn.PropertyName} = ({fieldRoslyn.TypeName}){NAMESPACE_THEME}DynamicTheme.GetSharedValue(typeof({Symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}),typeof({fullthemeText}),\"{fieldRoslyn.PropertyName}\");");
-                        sourceBuilder.AppendLine($"      public {fieldRoslyn.TypeName} {themeText}NoHovered{fieldRoslyn.PropertyName}");
-                        sourceBuilder.AppendLine("      {");
-                        sourceBuilder.AppendLine($"         get => _{themeText}NoHovered{fieldRoslyn.PropertyName};");
-                        sourceBuilder.AppendLine("         set");
-                        sourceBuilder.AppendLine("         {");
-                        sourceBuilder.AppendLine($"            var oldValue = _{themeText}NoHovered{fieldRoslyn.PropertyName};");
-                        sourceBuilder.AppendLine($"            _{themeText}NoHovered{fieldRoslyn.PropertyName} = value;");
-                        sourceBuilder.AppendLine($$"""
-                                        if(CurrentTheme == typeof({{fullthemeText}}))
-                                        {
-                                           NoHoveredTransition.SetProperty(x => x.{{fieldRoslyn.PropertyName}}, value);
-                                           if(!IsHoverChanging && !IsHovered && !IsThemeChanging)
-                                           {
-                                              {{fieldRoslyn.PropertyName}} = value;
-                                           }
-                                        }
-                            """);
-                        sourceBuilder.AppendLine($"            On{themeText}NoHovered{fieldRoslyn.PropertyName}Changed(oldValue,value);");
-                        sourceBuilder.AppendLine($"            {NAMESPACE_THEME}DynamicTheme.SetIsolatedValue(this,typeof({fullthemeText}),\"{fieldRoslyn.PropertyName}\",value);");
-                        sourceBuilder.AppendLine("         }");
-                        sourceBuilder.AppendLine("      }");
-                        sourceBuilder.AppendLine($"      partial void On{themeText}NoHovered{fieldRoslyn.PropertyName}Changed({fieldRoslyn.TypeName} oldValue,{fieldRoslyn.TypeName} newValue);");
-                        sourceBuilder.AppendLine();
-                    }
-                }
-                else
-                {
-                    sourceBuilder.AppendLine($"      private {fieldRoslyn.TypeName} _Hovered{fieldRoslyn.PropertyName};");
-                    sourceBuilder.AppendLine($"      public {fieldRoslyn.TypeName} Hovered{fieldRoslyn.PropertyName}");
-                    sourceBuilder.AppendLine("      {");
-                    sourceBuilder.AppendLine($"         get => _Hovered{fieldRoslyn.PropertyName};");
-                    sourceBuilder.AppendLine("         set");
-                    sourceBuilder.AppendLine("         {");
-                    sourceBuilder.AppendLine($"            var oldValue = _Hovered{fieldRoslyn.PropertyName};");
-                    sourceBuilder.AppendLine($"            _Hovered{fieldRoslyn.PropertyName} = value;");
-                    sourceBuilder.AppendLine($$"""
-                                    HoveredTransition.SetProperty(x => x.{{fieldRoslyn.PropertyName}}, value);
-                        """);
-                    sourceBuilder.AppendLine($"            OnHovered{fieldRoslyn.PropertyName}Changed(oldValue,value);");
-                    sourceBuilder.AppendLine("         }");
-                    sourceBuilder.AppendLine("      }");
-                    sourceBuilder.AppendLine($"      partial void OnHovered{fieldRoslyn.PropertyName}Changed({fieldRoslyn.TypeName} oldValue,{fieldRoslyn.TypeName} newValue);");
-                    sourceBuilder.AppendLine();
-
-                    sourceBuilder.AppendLine($"      private {fieldRoslyn.TypeName} _NoHovered{fieldRoslyn.PropertyName}{fieldRoslyn.Initial};");
-                    sourceBuilder.AppendLine($"      public {fieldRoslyn.TypeName} NoHovered{fieldRoslyn.PropertyName}");
-                    sourceBuilder.AppendLine("      {");
-                    sourceBuilder.AppendLine($"         get => _NoHovered{fieldRoslyn.PropertyName};");
-                    sourceBuilder.AppendLine("         set");
-                    sourceBuilder.AppendLine("         {");
-                    sourceBuilder.AppendLine($"            var oldValue = _NoHovered{fieldRoslyn.PropertyName};");
-                    sourceBuilder.AppendLine($"            _NoHovered{fieldRoslyn.PropertyName} = value;");
-                    sourceBuilder.AppendLine($$"""
-                                    NoHoveredTransition.SetProperty(x => x.{{fieldRoslyn.PropertyName}}, value);
-                                    if (!IsHoverChanging && !IsHovered)
-                                    {
-                                        {{fieldRoslyn.PropertyName}} = value;
-                                    }
-                        """);
-                    sourceBuilder.AppendLine($"            OnNoHovered{fieldRoslyn.PropertyName}Changed(oldValue,value);");
-                    sourceBuilder.AppendLine("         }");
-                    sourceBuilder.AppendLine("      }");
-                    sourceBuilder.AppendLine($"      partial void OnNoHovered{fieldRoslyn.PropertyName}Changed({fieldRoslyn.TypeName} oldValue,{fieldRoslyn.TypeName} newValue);");
-                    sourceBuilder.AppendLine();
-                }
-            }
-
-            sourceBuilder.AppendLine();
-
-            //生成主题修改后的动画效果更新函数
-            sourceBuilder.AppendLine("      protected virtual void UpdateHoverState()");
-            sourceBuilder.AppendLine("      {");
-            if (IsDynamicTheme)
-            {
-                sourceBuilder.AppendLine("         if(_isNewTheme && CurrentTheme != null)");
-                sourceBuilder.AppendLine("         {");
-                sourceBuilder.AppendLine("             _isNewTheme = false;");
-                foreach (var fieldRoslyn in hoverables)
-                {
-                    if (IsDynamicTheme && fieldRoslyn.ThemeAttributes.Count > 0)
-                    {
-                        sourceBuilder.AppendLine($"             HoveredTransition.SetProperty(b => b.{fieldRoslyn.PropertyName}, {fieldRoslyn.PropertyName}_SelectThemeValue_Hovered(CurrentTheme.Name));");
-                        sourceBuilder.AppendLine($"             NoHoveredTransition.SetProperty(b => b.{fieldRoslyn.PropertyName}, {fieldRoslyn.PropertyName}_SelectThemeValue_NoHovered(CurrentTheme.Name));");
-                    }
-                }
-                sourceBuilder.AppendLine("         }");
-            }
-            sourceBuilder.AppendLine($$"""
-                         var copy = _runningHovers;
-                         foreach (var item in copy)
-                         {
-                            item.Dispose();
-                         }
-                         _runningHovers = this.BeginTransitions(IsHovered ? HoveredTransition : NoHoveredTransition);
-                """);
-            sourceBuilder.AppendLine("      }");
-
-            //生成Hovered值选择器
-            foreach (var fieldRoslyn in hoverables)
-            {
-                if (IsDynamicTheme && fieldRoslyn.ThemeAttributes.Count > 0)
-                {
-                    sourceBuilder.AppendLine($"      protected {fieldRoslyn.TypeName} {fieldRoslyn.PropertyName}_SelectThemeValue_Hovered(string themeName)");
-                    sourceBuilder.AppendLine("      {");
-                    sourceBuilder.AppendLine($"         switch(themeName)");
-                    sourceBuilder.AppendLine("         {");
-                    foreach (var themeText in fieldRoslyn.ThemeAttributes.Select(t => AnalizeHelper.ExtractThemeName(t)))
-                    {
-                        sourceBuilder.AppendLine($"            case \"{themeText}\":");
-                        sourceBuilder.AppendLine($"                 return {themeText}Hovered{fieldRoslyn.PropertyName};");
-                    }
-                    sourceBuilder.AppendLine("         }");
-                    sourceBuilder.AppendLine($"         return {fieldRoslyn.PropertyName};");
-                    sourceBuilder.AppendLine("      }");
-                }
-                sourceBuilder.AppendLine();
-            }
-
-            //生成NoHovered值选择器
-            foreach (var fieldRoslyn in hoverables)
-            {
-                if (IsDynamicTheme && fieldRoslyn.ThemeAttributes.Count > 0)
-                {
-                    sourceBuilder.AppendLine($"      protected {fieldRoslyn.TypeName} {fieldRoslyn.PropertyName}_SelectThemeValue_NoHovered(string themeName)");
-                    sourceBuilder.AppendLine("      {");
-                    sourceBuilder.AppendLine($"         switch(themeName)");
-                    sourceBuilder.AppendLine("         {");
-                    foreach (var themeText in fieldRoslyn.ThemeAttributes.Select(t => AnalizeHelper.ExtractThemeName(t)))
-                    {
-                        sourceBuilder.AppendLine($"            case \"{themeText}\":");
-                        sourceBuilder.AppendLine($"                 return {themeText}NoHovered{fieldRoslyn.PropertyName};");
-                    }
-                    sourceBuilder.AppendLine("         }");
-                    sourceBuilder.AppendLine($"         return {fieldRoslyn.PropertyName};");
-                    sourceBuilder.AppendLine("      }");
-                }
-                sourceBuilder.AppendLine();
-            }
-
-            return sourceBuilder.ToString();
-        }
-        public string GenerateModelReader()
-        {
-            if (string.IsNullOrEmpty(ModelTypeName) || string.IsNullOrEmpty(ModelReaderName)) return string.Empty;
-
-            var sourceBuilder = new StringBuilder();
-            sourceBuilder.AppendLine($"      public {ModelTypeName} To{ModelReaderName}()");
-            sourceBuilder.AppendLine("      {");
-            sourceBuilder.AppendLine($"        var model = new {ModelTypeName}();");
-            foreach (var field in FieldRoslyns)
-            {
-                var targetProperty = string.IsNullOrEmpty(field.ModelAlias)
-                    ? field.PropertyName
-                    : field.ModelAlias;
-
-                if (ModelPropertyNames.Contains(targetProperty))
-                {
-                    sourceBuilder.AppendLine($"        model.{targetProperty} = this.{field.PropertyName};");
-                }
-            }
-            sourceBuilder.AppendLine("        return model;");
-            sourceBuilder.AppendLine("      }");
             return sourceBuilder.ToString();
         }
     }

@@ -3,59 +3,83 @@ using System.Text;
 
 namespace MinimalisticWPF.Generator.Factory
 {
-    public class PropertyFactory(string modifies, string fullTypeName, string sourceName, string propertyName, bool isView = false) : IFactory
+    public class PropertyFactory : IFactory
     {
         const string RETRACT = "      ";
 
-        public string Modifies { get; private set; } = modifies;
-        public string FullTypeName { get; private set; } = fullTypeName;
-        public string SourceName { get; private set; } = sourceName;
-        public string PropertyName { get; private set; } = propertyName;
+        public PropertyFactory(FieldRoslyn fieldRoslyn, string modifies, bool isView)
+        {
+            Modifies = modifies;
+            FullTypeName = fieldRoslyn.TypeName;
+            SourceName = fieldRoslyn.FieldName;
+            PropertyName = fieldRoslyn.PropertyName;
+            IsView = isView;
+        }
 
-        public List<string> SetterBody { get; set; } = [];
+        public PropertyFactory(string modifies, string fullTypeName, string sourceName, string propertyName, bool isView)
+        {
+            Modifies = modifies;
+            FullTypeName = fullTypeName;
+            SourceName = sourceName;
+            PropertyName = propertyName;
+            IsView = isView;
+        }
+
+        public string Modifies { get; private set; }
+        public string FullTypeName { get; private set; }
+        public string SourceName { get; private set; }
+        public string PropertyName { get; private set; }
+
+        public List<string> SetteringBody { get; set; } = [];
+        public List<string> SetteredBody { get; set; } = [];
         public List<string> AttributeBody { get; set; } = [];
 
-        private bool IsView { get; set; } = isView;
+        private bool IsView { get; set; }
 
         public string GenerateViewModel()
         {
-            var setterBody = new StringBuilder();
-            for (int i = 0; i < SetterBody.Count; i++)
+            var setteringBody = new StringBuilder();
+            for (int i = 0; i < SetteringBody.Count; i++)
             {
-                setterBody.AppendLine($"{RETRACT}       {SetterBody[i]}");
-            }
-
-            var attributeBody = new StringBuilder();
-            for (int i = 0; i < AttributeBody.Count; i++)
-            {
-                if (i == AttributeBody.Count - 1)
+                if(i == SetteringBody.Count - 1)
                 {
-                    attributeBody.Append($"{RETRACT}[{AttributeBody[i]}]");
+                    setteringBody.Append($"{RETRACT}       {SetteringBody[i]}");
                 }
                 else
                 {
-                    attributeBody.AppendLine($"{RETRACT}[{AttributeBody[i]}]");
+                    setteringBody.AppendLine($"{RETRACT}       {SetteringBody[i]}");
+                }
+            }
+
+            var setteredBody = new StringBuilder();
+            for (int i = 0; i < SetteredBody.Count; i++)
+            {
+                if(i == SetteredBody.Count - 1)
+                {
+                    setteredBody.Append($"{RETRACT}       {SetteredBody[i]}");
+                }
+                else
+                {
+                    setteredBody.AppendLine($"{RETRACT}       {SetteredBody[i]}");
                 }
             }
 
             return $$"""
-
-                {{attributeBody}}
                 {{RETRACT}}{{Modifies}} {{FullTypeName}} {{PropertyName}}
                 {{RETRACT}}{
-                {{RETRACT}}    get => {{SourceName}};
-                {{RETRACT}}    set
-                {{RETRACT}}    {
-                {{RETRACT}}       var old = {{SourceName}};
-                {{RETRACT}}       On{{PropertyName}}Changing(old,value);
-                {{RETRACT}}       {{SourceName}} = value;               
-                {{RETRACT}}       On{{PropertyName}}Changed(old,value);
-                {{setterBody.ToString()}}
-                {{RETRACT}}    }
+                {{RETRACT}}    get => {{SourceName}}; 
+                {{RETRACT}}    set 
+                {{RETRACT}}    { 
+                {{RETRACT}}       var old = {{SourceName}}; 
+                {{setteringBody.ToString()}} 
+                {{RETRACT}}       On{{PropertyName}}Changing(old,value); 
+                {{RETRACT}}       {{SourceName}} = value; 
+                {{RETRACT}}       On{{PropertyName}}Changed(old,value); 
+                {{setteredBody.ToString()}} 
+                {{RETRACT}}    } 
                 {{RETRACT}}}
-                {{RETRACT}}
-                {{RETRACT}}partial void On{{PropertyName}}Changing({{FullTypeName}} oldValue,{{FullTypeName}} newValue);
-                {{RETRACT}}partial void On{{PropertyName}}Changed({{FullTypeName}} oldValue,{{FullTypeName}} newValue);
+                {{RETRACT}}partial void On{{PropertyName}}Changing({{FullTypeName}} oldValue,{{FullTypeName}} newValue); 
+                {{RETRACT}}partial void On{{PropertyName}}Changed({{FullTypeName}} oldValue,{{FullTypeName}} newValue); 
                 """;
         }
         public string Generate()
