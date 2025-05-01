@@ -32,20 +32,6 @@ namespace MinimalisticWPF.Generator
         {
             return namedTypeSymbol.GetAttributes().Any(attr => attr.AttributeClass?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == FULLNAME_HOTKEY);
         }
-        internal static bool IsThemeClass(INamedTypeSymbol namedTypeSymbol, out IEnumerable<AttributeData> headThemes, out IEnumerable<Tuple<IFieldSymbol, IEnumerable<AttributeData>>> bodyThemes)
-        {
-            headThemes = namedTypeSymbol
-                    .GetAttributes()
-                    .Where(att => att.AttributeClass?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == FULLNAME_THEME);
-
-            bodyThemes = namedTypeSymbol
-                    .GetMembers()
-                    .OfType<IFieldSymbol>()
-                    .Select(field => Tuple.Create(field, field.GetAttributes().Where(att => att.AttributeClass?.AllInterfaces.Any(i => i.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == FULLNAME_ITHEMEATTRIBUTE) ?? false)))
-                    .Where(t => t.Item2.Any());
-
-            return headThemes.Any() || bodyThemes.Any();
-        }
         internal static bool IsViewModelClass(INamedTypeSymbol classSymbol, out IEnumerable<IFieldSymbol> fieldSymbols)
         {
             fieldSymbols = classSymbol.GetMembers()
@@ -70,15 +56,6 @@ namespace MinimalisticWPF.Generator
                 var fullName = $"{namespaceValidation}.{typeName}";
                 return compilation.GetTypeByMetadataName(fullName) as INamedTypeSymbol;
             }
-        }
-
-        internal static ClassDeclarationSyntax? FindTargetClassSyntax(
-            INamedTypeSymbol symbol)
-        {
-            return symbol.DeclaringSyntaxReferences
-                .Select(reference => reference.GetSyntax())
-                .OfType<ClassDeclarationSyntax>()
-                .FirstOrDefault();
         }
 
         internal static ClassDeclarationSyntax GetClassDeclaration(GeneratorSyntaxContext context)
@@ -127,25 +104,6 @@ namespace MinimalisticWPF.Generator
             {
                 return char.ToUpper(variable.Identifier.Text[0]) + variable.Identifier.Text.Substring(1);
             }
-        }
-        internal static string GetPropertyNameByFieldName(string fieldName)
-        {
-            if (fieldName.StartsWith("_"))
-            {
-                return char.ToUpper(fieldName[1]) + fieldName.Substring(2);
-            }
-            else
-            {
-                return char.ToUpper(fieldName[0]) + fieldName.Substring(1);
-            }
-        }
-
-        /// <summary>
-        /// 解析字段初始化原文
-        /// </summary>
-        internal static string InitialTextParse(this string source)
-        {
-            return source.Replace('=', ' ').TrimStart();
         }
 
         /// <summary>

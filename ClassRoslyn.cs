@@ -23,7 +23,6 @@ namespace MinimalisticWPF.Generator
             Compilation = compilation;
 
             IsAop = AnalizeHelper.IsAopClass(Syntax);
-            IsDynamicTheme = AnalizeHelper.IsThemeClass(Symbol, out var headThemes, out var bodyThemes);
             ReadMonoConfig(namedTypeSymbol);
         }
 
@@ -32,7 +31,6 @@ namespace MinimalisticWPF.Generator
         public Compilation Compilation { get; set; }
 
         public bool IsAop { get; set; } = false;
-        public bool IsDynamicTheme { get; set; } = false;
 
         public bool IsMono { get; set; } = false;
         public double MonoSpan { get; set; } = 17;

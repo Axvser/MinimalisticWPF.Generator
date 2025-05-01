@@ -52,10 +52,12 @@ namespace MinimalisticWPF.Generator
                     (p => p.Name == NAME_STYLE &&
                           p.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == FULLNAME_STYLE);
                 IsHover = Hovers.Any();
+                IsDynamicTheme = Themes.Any();
             }
         }
 
         public bool IsView { get; set; } = false;
+        public bool IsDynamicTheme { get; set; } = false;
         public bool IsInitializable { get; set; } = false;
         public bool IsClick { get; set; } = false;
         public bool IsStyleExist { get; set; } = false;
