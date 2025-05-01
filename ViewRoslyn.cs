@@ -21,7 +21,6 @@ namespace MinimalisticWPF.Generator
         const string NAME_INITIALIZE = "InitializeComponent";
         const string TAG_PROXY = "_proxy";
 
-        const string NAMESPACE_MODEL = "global::System.ComponentModel.";
         const string NAMESPACE_WINDOWS = "global::System.Windows.";
         const string NAMESPACE_HOTKEY = "global::MinimalisticWPF.HotKey.";
         const string NAMESPACE_IHOTKEY = "global::MinimalisticWPF.StructuralDesign.HotKey.";
@@ -1069,7 +1068,7 @@ namespace MinimalisticWPF.Generator
                 builder.AppendLine("            ReLoadHoverTransition();");
             }
         }
-        private string GetMonoUpdateBody()
+        public override string GetMonoUpdateBody()
         {
             return IsMono switch
             {
@@ -1082,7 +1081,7 @@ namespace MinimalisticWPF.Generator
                 _ => string.Empty
             };
         }
-        private string GetMonoAwakeBody()
+        public override string GetMonoAwakeBody()
         {
             return IsMono switch
             {

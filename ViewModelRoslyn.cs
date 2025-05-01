@@ -30,7 +30,9 @@ namespace MinimalisticWPF.Generator
             builder.AppendLine(GenerateUsing());
             builder.AppendLine(GenerateNamespace());
             builder.AppendLine(GeneratePartialClass());
+            builder.AppendLine(GenerateConstructor());
             builder.AppendLine(GenerateIPC());
+            builder.AppendLine(GenerateInitializeMinimalisticWPF());
             builder.AppendLine(GenerateEnd());
 
             return builder.ToString();
@@ -111,6 +113,172 @@ namespace MinimalisticWPF.Generator
             }
 
             return sourceBuilder.ToString();
+        }
+        public string GenerateConstructor()
+        {
+            var acc = AnalizeHelper.GetAccessModifier(Symbol);
+
+            var methods = Symbol.GetMembers()
+                .OfType<IMethodSymbol>()
+                .Where(m => m.GetAttributes().Any(att => att.AttributeClass?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == FULLNAME_CONSTRUCTOR))
+                .ToList();
+
+            StringBuilder builder = new();
+            var strAop = $"{NAMESPACE_AOP}{AnalizeHelper.GetInterfaceName(Syntax)}";
+            if (IsAop)
+            {
+                builder.AppendLine($$"""
+                                           public {{strAop}} Proxy { get; private set; }
+                                     """);
+                builder.AppendLine();
+            }
+
+            if (IsMono)
+            {
+                builder.AppendLine($$"""
+                          private global::System.Threading.CancellationTokenSource? cts_mono = null;
+
+                          private bool isactive = true;
+                          public bool IsActive
+                          {
+                              get => isactive;
+                              private set => isactive = value;
+                          }
+
+                          public async void SetIsActive(bool value)
+                          {
+                              if (value != IsActive)
+                              {
+                                  IsActive = value;
+                                  if (value)
+                                  {
+                                      await _inner_Update();
+                                  }
+                                  else
+                                  {
+                                      _innerCleanMonoToken();
+                                  }
+                              }
+                          }
+
+                          private async Task _inner_Update()
+                          {
+                              _innerCleanMonoToken();
+
+                              var newmonocts = new global::System.Threading.CancellationTokenSource();
+                              cts_mono = newmonocts;
+
+                              try
+                              {
+                                 if(IsActive) Start();
+
+                                 while (IsActive && !newmonocts.Token.IsCancellationRequested)
+                                 {
+                                     Update();
+                                     LateUpdate();
+                                     await Task.Delay({{MonoSpan}},newmonocts.Token);
+                                 }
+                              }
+                              catch (Exception ex)
+                              {
+                                  global::System.Diagnostics.Debug.WriteLine(ex.Message);
+                              }
+                              finally
+                              {
+                                  if (global::System.Threading.Interlocked.CompareExchange(ref cts_mono, null, newmonocts) == newmonocts) newmonocts.Dispose();
+                              }
+                          }
+
+                          partial void Awake();
+                          partial void Start();
+                          partial void Update();
+                          partial void LateUpdate();
+
+                          private void _innerCleanMonoToken()
+                          {
+                              var oldCts = Interlocked.Exchange(ref cts_mono, null);
+                              if (oldCts != null)
+                              {
+                                  try { oldCts.Cancel(); } catch { }
+                                  oldCts.Dispose();
+                              }
+                          }
+
+                    """);
+            }
+
+            builder.AppendLine($"      {acc} {Symbol.Name}()");
+            builder.AppendLine("      {");
+            builder.AppendLine("         InitializeMinimalisticWPF();");
+            foreach (var method in methods.Where(m => !m.Parameters.Any()))
+            {
+                builder.AppendLine($"         {method.Name}();");
+            }
+            builder.AppendLine("      }");
+
+            var groupedMethods = methods.Where(m => m.Parameters.Any()).GroupBy(m =>
+                string.Join(",", m.Parameters.Select(p => p.Type.ToDisplayString())));
+
+            foreach (var group in groupedMethods)
+            {
+                var parameters = group.Key.Split(',');
+                var parameterList = string.Join(", ", group.First().Parameters.Select(p => $"{p.Type.ToDisplayString()} {p.Name}"));
+                var callParameters = string.Join(", ", group.First().Parameters.Select(p => p.Name));
+
+                builder.AppendLine();
+                builder.AppendLine($"      {acc} {Symbol.Name}({parameterList})");
+                builder.AppendLine("      {");
+                builder.AppendLine("         InitializeMinimalisticWPF();");
+                foreach (var method in group)
+                {
+                    builder.AppendLine($"         {method.Name}({callParameters});");
+                }
+                builder.AppendLine("      }");
+            }
+
+            return builder.ToString();
+        }
+        public string GenerateInitializeMinimalisticWPF()
+        {
+            StringBuilder builder = new();
+            var strAop = $"{NAMESPACE_AOP}{AnalizeHelper.GetInterfaceName(Syntax)}";
+            builder.AppendLine($"      private void InitializeMinimalisticWPF()");
+            builder.AppendLine("      {");
+            if (IsAop)
+            {
+                builder.AppendLine($"         Proxy = this.CreateProxy<{strAop}>();");
+            }
+            if (IsMono)
+            {
+                builder.AppendLine(GetMonoAwakeBody());
+                builder.AppendLine(GetMonoUpdateBody());
+            }
+            builder.AppendLine("      }");
+
+            return builder.ToString();
+        }
+
+        public override string GetMonoUpdateBody()
+        {
+            return IsMono switch
+            {
+                true => $$"""
+                                   var monofunc = new Func<Task>(async () =>
+                                   {
+                                       await _inner_Update();
+                                   });
+                                   monofunc?.Invoke();
+                          """,
+                _ => string.Empty
+            };
+        }
+        public override string GetMonoAwakeBody()
+        {
+            return IsMono switch
+            {
+                true => "         Awake();",
+                _ => string.Empty
+            };
         }
     }
 }

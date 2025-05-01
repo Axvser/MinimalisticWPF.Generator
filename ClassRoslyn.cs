@@ -12,6 +12,7 @@ namespace MinimalisticWPF.Generator
         protected const string NAMESPACE_ITHEME = "global::MinimalisticWPF.StructuralDesign.Theme.";
         protected const string NAMESPACE_TRANSITOIN = "global::MinimalisticWPF.TransitionSystem.";
         protected const string NAMESPACE_THEME = "global::MinimalisticWPF.Theme.";
+        protected const string NAMESPACE_MODEL = "global::System.ComponentModel.";
 
         protected const string FULLNAME_MONOCONFIG = "global::MinimalisticWPF.SourceGeneratorMark.MonoBehaviourAttribute";
         protected const string FULLNAME_CONSTRUCTOR = "global::MinimalisticWPF.SourceGeneratorMark.ConstructorAttribute";
@@ -72,5 +73,7 @@ namespace MinimalisticWPF.Generator
             sourceBuilder.AppendLine("}");
             return sourceBuilder.ToString();
         }
+        public abstract string GetMonoUpdateBody();
+        public abstract string GetMonoAwakeBody();
     }
 }
