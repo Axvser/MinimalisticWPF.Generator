@@ -16,7 +16,8 @@ namespace MinimalisticWPF.Generator
         const string FULLNAME_THEMECONFIG = "global::MinimalisticWPF.ThemeAttribute";
         const string FULLNAME_HOVERCONFIG = "global::MinimalisticWPF.HoverAttribute";
         const string FULLNAME_CLICKCONFIG = "global::MinimalisticWPF.ClickModuleAttribute";
-        const string FULLNAME_MONOCONFIG = "global::MinimalisticWPF.MonoBehaviourAttribute";
+        const string FULLNAME_STYLE = "global::System.Windows.Style";
+        const string NAME_STYLE = "Style";
         const string NAMESPACE_MODEL = "global::System.ComponentModel.";
         const string NAME_INITIALIZE = "InitializeComponent";
         const string NAMESPACE_WINDOWS = "global::System.Windows.";
@@ -36,25 +37,17 @@ namespace MinimalisticWPF.Generator
 
             var hovers = GetHoverAttributesTexts();
             var themes = GetThemeAttributesTexts();
-            ReadContextConfigParams(namedTypeSymbol);
-            if (DataContextSymbol is not null && DataContextSyntax is not null)
-            {
-                foreach (var fieldRoslyn in DataContextSymbol.GetMembers().OfType<IFieldSymbol>().Select(f => new FieldRoslyn(f)))
-                {
-                    hovers.Remove(fieldRoslyn.PropertyName);
-                    themes.RemoveAll(t => t.Item1 == fieldRoslyn.PropertyName);
-                }
-            }
             Hovers = hovers;
             Themes = themes;
             LoadPropertySymbolAtTree(namedTypeSymbol, PropertyTree);
             ReadClickConfig(namedTypeSymbol);
-            ReadMonoConfig(namedTypeSymbol);
             IsInitializable = IsInitializeComponentExist(namedTypeSymbol);
-            IsView = Hovers.Count > 0 || Themes.Count > 0 || (DataContextSyntax != null && DataContextSymbol != null) || IsClick || IsMono;
+            IsView = Hovers.Count > 0 || Themes.Count > 0 || IsClick || IsMono;
             if (IsView)
             {
-                IsStyleExist = PropertyTree.Any(p => p.Name == "Style");
+                IsStyleExist = PropertyTree.Any
+                    (p => p.Name == NAME_STYLE && 
+                          p.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == FULLNAME_STYLE);
                 IsHover = Hovers.Any();
             }
         }
@@ -65,37 +58,11 @@ namespace MinimalisticWPF.Generator
         public bool IsStyleExist { get; set; } = false;
         public bool IsHover { get; set; } = false;
 
-        public bool IsMono { get; set; } = false;
-        public double MonoSpan { get; set; } = 17;
-
         List<IPropertySymbol> PropertyTree { get; set; } = [];
-
-        public ClassDeclarationSyntax? DataContextSyntax { get; set; }
-        public INamedTypeSymbol? DataContextSymbol { get; set; }
 
         public HashSet<string> Hovers { get; set; } = [];
         public List<Tuple<string, string, IEnumerable<string>>> Themes { get; set; } = [];
 
-        private void ReadContextConfigParams(INamedTypeSymbol fieldSymbol)
-        {
-            var attributeData = fieldSymbol.GetAttributes()
-                .FirstOrDefault(ad => ad.AttributeClass?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == $"{NAMESPACE_CONFIG}DataContextConfigAttribute");
-            if (attributeData != null)
-            {
-                var name = (string)attributeData.ConstructorArguments[0].Value!;
-                var validation = (string)attributeData.ConstructorArguments[1].Value!;
-                var targetSymbol = AnalizeHelper.FindTargetTypeSymbol(Compilation, name, validation);
-                if (targetSymbol != null)
-                {
-                    DataContextSymbol = targetSymbol;
-                    var targetSyntax = AnalizeHelper.FindTargetClassSyntax(targetSymbol);
-                    if (targetSyntax != null)
-                    {
-                        DataContextSyntax = targetSyntax;
-                    }
-                }
-            }
-        }
         private void ReadClickConfig(INamedTypeSymbol symbol)
         {
             var attributeData = symbol.GetAttributes()
@@ -103,16 +70,6 @@ namespace MinimalisticWPF.Generator
             if (attributeData != null)
             {
                 IsClick = true;
-            }
-        }
-        private void ReadMonoConfig(INamedTypeSymbol symbol)
-        {
-            var attributeData = symbol.GetAttributes()
-                .FirstOrDefault(ad => ad.AttributeClass?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == FULLNAME_MONOCONFIG);
-            if (attributeData != null)
-            {
-                IsMono = true;
-                MonoSpan = (double)attributeData.ConstructorArguments[0].Value!;
             }
         }
         private static bool IsUIElement(INamedTypeSymbol? symbol)
@@ -254,12 +211,8 @@ namespace MinimalisticWPF.Generator
             builder.AppendLine(GenerateConstructor());
             builder.AppendLine(GenerateITA());
             builder.AppendLine(GenerateView());
-            builder.AppendLine(GenerateModelReader());
             builder.AppendLine(GenerateHover());
             builder.AppendLine(GenerateHoverControl());
-            builder.AppendLine(GenerateInitialize());
-            builder.AppendLine(GenerateHoverDependencyPropertiesFromViewModel());
-            builder.AppendLine(GenerateDependencyPropertiesFromViewModel());
             builder.AppendLine(GenerateEnd());
 
             return builder.ToString();
@@ -693,45 +646,6 @@ namespace MinimalisticWPF.Generator
 
             return builder.ToString();
         }
-        public string GenerateModelReader()
-        {
-            var fullTypeName = DataContextSymbol?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-
-            if (string.IsNullOrEmpty(fullTypeName) || DataContextSyntax is null || DataContextSymbol is null)
-            {
-                return string.Empty;
-            }
-
-            var vmroslyn = new ViewModelRoslyn(DataContextSyntax, DataContextSymbol, Compilation);
-
-            if (string.IsNullOrEmpty(vmroslyn.ModelTypeName) || string.IsNullOrEmpty(vmroslyn.ModelReaderName))
-            {
-                return string.Empty;
-            }
-
-            var sourceBuilder = new StringBuilder();
-            sourceBuilder.AppendLine($"      public {vmroslyn.ModelTypeName} To{vmroslyn.ModelReaderName}()");
-            sourceBuilder.AppendLine("      {");
-            sourceBuilder.AppendLine($"         return (({fullTypeName})DataContext).To{vmroslyn.ModelReaderName}();");
-            sourceBuilder.AppendLine("      }");
-            return sourceBuilder.ToString();
-        }
-        public string GenerateInitialize()
-        {
-            if (DataContextSyntax is null || DataContextSymbol is null)
-            {
-                return string.Empty;
-            }
-
-            var sourceBuilder = new StringBuilder();
-
-            foreach (var fieldRoslyn in new ViewModelRoslyn(DataContextSyntax, DataContextSymbol, Compilation).FieldRoslyns.Where(f => f.CanDependency))
-            {
-                sourceBuilder.AppendLine(fieldRoslyn.GenerateInitializeFunction(Symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)));
-            }
-
-            return sourceBuilder.ToString();
-        }
         public string GenerateView()
         {
             StringBuilder sourceBuilder = new();
@@ -1046,200 +960,6 @@ namespace MinimalisticWPF.Generator
             }
 
             return builder.ToString();
-        }
-        public string GenerateHoverDependencyPropertiesFromViewModel()
-        {
-            if (DataContextSymbol is null) return string.Empty;
-
-            var hoverables = DataContextSymbol.GetMembers().OfType<IFieldSymbol>().Select(f => new FieldRoslyn(f)).Where(fr => fr.CanHover && fr.CanDependency).ToArray();
-
-            var localTypeName = Symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-            var vmTypeName = DataContextSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-
-            var sourceBuilder = new StringBuilder();
-
-            foreach (var fieldRoslyn in hoverables)
-            {
-                if (fieldRoslyn.ThemeAttributes.Count > 0)
-                {
-                    foreach (var themeText in fieldRoslyn.ThemeAttributes.Select(t => AnalizeHelper.ExtractThemeName(t)))
-                    {
-                        sourceBuilder.AppendLine($$"""
-                                   public {{fieldRoslyn.TypeName}} {{themeText}}Hovered{{fieldRoslyn.PropertyName}}
-                                   {
-                                      get => ({{fieldRoslyn.TypeName}})GetValue({{themeText}}Hovered{{fieldRoslyn.PropertyName}}Property);
-                                      set => SetValue({{themeText}}Hovered{{fieldRoslyn.PropertyName}}Property, value);
-                                   }
-                                   public static readonly {{NAMESPACE_WINDOWS}}DependencyProperty {{themeText}}Hovered{{fieldRoslyn.PropertyName}}Property =
-                                      {{NAMESPACE_WINDOWS}}DependencyProperty.Register(
-                                      nameof({{themeText}}Hovered{{fieldRoslyn.PropertyName}}),
-                                      typeof({{fieldRoslyn.TypeName}}),
-                                      typeof({{localTypeName}}),
-                                      new {{NAMESPACE_WINDOWS}}PropertyMetadata({{fieldRoslyn.Initial.InitialTextParse()}}, _innerRun{{themeText}}Hovered{{fieldRoslyn.PropertyName}}Changed));   
-                                   public static void _innerRun{{themeText}}Hovered{{fieldRoslyn.PropertyName}}Changed({{NAMESPACE_WINDOWS}}DependencyObject d, {{NAMESPACE_WINDOWS}}DependencyPropertyChangedEventArgs e)
-                                   {
-                                      if (d is {{localTypeName}} control && control.DataContext is {{vmTypeName}} viewModel)
-                                      {
-                                         viewModel.{{themeText}}Hovered{{fieldRoslyn.PropertyName}} = ({{fieldRoslyn.TypeName}})e.NewValue;
-                                      }
-                                   }
-                            """);
-                        sourceBuilder.AppendLine($$"""
-                                   public {{fieldRoslyn.TypeName}} {{themeText}}NoHovered{{fieldRoslyn.PropertyName}}
-                                   {
-                                      get => ({{fieldRoslyn.TypeName}})GetValue({{themeText}}NoHovered{{fieldRoslyn.PropertyName}}Property);
-                                      set => SetValue({{themeText}}NoHovered{{fieldRoslyn.PropertyName}}Property, value);
-                                   }
-                                   public static readonly {{NAMESPACE_WINDOWS}}DependencyProperty {{themeText}}NoHovered{{fieldRoslyn.PropertyName}}Property =
-                                      {{NAMESPACE_WINDOWS}}DependencyProperty.Register(
-                                      nameof({{themeText}}NoHovered{{fieldRoslyn.PropertyName}}),
-                                      typeof({{fieldRoslyn.TypeName}}),
-                                      typeof({{localTypeName}}),
-                                      new {{NAMESPACE_WINDOWS}}PropertyMetadata({{fieldRoslyn.Initial.InitialTextParse()}}, _innerRun{{themeText}}NoHovered{{fieldRoslyn.PropertyName}}Changed));   
-                                   public static void _innerRun{{themeText}}NoHovered{{fieldRoslyn.PropertyName}}Changed({{NAMESPACE_WINDOWS}}DependencyObject d, {{NAMESPACE_WINDOWS}}DependencyPropertyChangedEventArgs e)
-                                   {
-                                      if (d is {{localTypeName}} control && control.DataContext is {{vmTypeName}} viewModel)
-                                      {
-                                         viewModel.{{themeText}}NoHovered{{fieldRoslyn.PropertyName}} = ({{fieldRoslyn.TypeName}})e.NewValue;
-                                      }
-                                   }
-                            """);
-                    }
-                }
-                else
-                {
-                    sourceBuilder.AppendLine($$"""
-                                   public {{fieldRoslyn.TypeName}} Hovered{{fieldRoslyn.PropertyName}}
-                                   {
-                                      get => ({{fieldRoslyn.TypeName}})GetValue(Hovered{{fieldRoslyn.PropertyName}}Property);
-                                      set => SetValue(Hovered{{fieldRoslyn.PropertyName}}Property, value);
-                                   }
-                                   public static readonly {{NAMESPACE_WINDOWS}}DependencyProperty Hovered{{fieldRoslyn.PropertyName}}Property =
-                                      {{NAMESPACE_WINDOWS}}DependencyProperty.Register(
-                                      nameof(Hovered{{fieldRoslyn.PropertyName}}),
-                                      typeof({{fieldRoslyn.TypeName}}),
-                                      typeof({{localTypeName}}),
-                                      new {{NAMESPACE_WINDOWS}}PropertyMetadata({{fieldRoslyn.Initial.InitialTextParse()}}, _innerRunHovered{{fieldRoslyn.PropertyName}}Changed));   
-                                   private static void _innerRunHovered{{fieldRoslyn.PropertyName}}Changed({{NAMESPACE_WINDOWS}}DependencyObject d, {{NAMESPACE_WINDOWS}}DependencyPropertyChangedEventArgs e)
-                                   {
-                                      if (d is {{localTypeName}} control && control.DataContext is {{vmTypeName}} viewModel)
-                                      {
-                                         viewModel.Hovered{{fieldRoslyn.PropertyName}} = ({{fieldRoslyn.TypeName}})e.NewValue;
-                                      }
-                                   }
-                            """);
-                    sourceBuilder.AppendLine($$"""
-                                   public {{fieldRoslyn.TypeName}} NoHovered{{fieldRoslyn.PropertyName}}
-                                   {
-                                      get => ({{fieldRoslyn.TypeName}})GetValue(Hovered{{fieldRoslyn.PropertyName}}Property);
-                                      set => SetValue(NoHovered{{fieldRoslyn.PropertyName}}Property, value);
-                                   }
-                                   public static readonly {{NAMESPACE_WINDOWS}}DependencyProperty NoHovered{{fieldRoslyn.PropertyName}}Property =
-                                      {{NAMESPACE_WINDOWS}}DependencyProperty.Register(
-                                      nameof(NoHovered{{fieldRoslyn.PropertyName}}),
-                                      typeof({{fieldRoslyn.TypeName}}),
-                                      typeof({{localTypeName}}),
-                                      new {{NAMESPACE_WINDOWS}}PropertyMetadata({{fieldRoslyn.Initial.InitialTextParse()}}, _innerRunNoHovered{{fieldRoslyn.PropertyName}}Changed));   
-                                   private static void _innerRunNoHovered{{fieldRoslyn.PropertyName}}Changed({{NAMESPACE_WINDOWS}}DependencyObject d, {{NAMESPACE_WINDOWS}}DependencyPropertyChangedEventArgs e)
-                                   {
-                                      if (d is {{localTypeName}} control && control.DataContext is {{vmTypeName}} viewModel)
-                                      {
-                                         viewModel.NoHovered{{fieldRoslyn.PropertyName}} = ({{fieldRoslyn.TypeName}})e.NewValue;
-                                      }
-                                   }
-                            """);
-                }
-                sourceBuilder.AppendLine();
-            }
-
-
-
-            return sourceBuilder.ToString();
-        }
-        public string GenerateDependencyPropertiesFromViewModel()
-        {
-            if (DataContextSymbol is null) return string.Empty;
-
-            var unhoverables = DataContextSymbol.GetMembers().OfType<IFieldSymbol>().Select(f => new FieldRoslyn(f)).Where(fr => !fr.CanHover && fr.CanDependency).ToArray();
-
-            var localTypeName = Symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-            var vmTypeName = DataContextSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-
-            var sourceBuilder = new StringBuilder();
-
-            foreach (var fieldRoslyn in unhoverables)
-            {
-                if (fieldRoslyn.ThemeAttributes.Count > 0)
-                {
-                    foreach (var (fullattName, attName) in fieldRoslyn.ThemeAttributes.Select(t => (t.Split('(')[0], AnalizeHelper.ExtractThemeName(t))))
-                    {
-                        sourceBuilder.AppendLine($$"""
-                                   public {{fieldRoslyn.TypeName}} {{attName}}{{fieldRoslyn.PropertyName}}
-                                   {
-                                      get => ({{fieldRoslyn.TypeName}})GetValue({{attName}}{{fieldRoslyn.PropertyName}}Property);
-                                      set => SetValue({{attName}}{{fieldRoslyn.PropertyName}}Property, value);
-                                   }
-                                   public static readonly {{NAMESPACE_WINDOWS}}DependencyProperty {{attName}}{{fieldRoslyn.PropertyName}}Property =
-                                      {{NAMESPACE_WINDOWS}}DependencyProperty.Register(
-                                      nameof({{attName}}{{fieldRoslyn.PropertyName}}),
-                                      typeof({{fieldRoslyn.TypeName}}),
-                                      typeof({{localTypeName}}),
-                                      new {{NAMESPACE_WINDOWS}}PropertyMetadata({{fieldRoslyn.Initial.InitialTextParse()}}, _innerRun{{attName}}{{fieldRoslyn.PropertyName}}Changed));   
-                                   public static void _innerRun{{attName}}{{fieldRoslyn.PropertyName}}Changed({{NAMESPACE_WINDOWS}}DependencyObject d, {{NAMESPACE_WINDOWS}}DependencyPropertyChangedEventArgs e)
-                                   {
-                                      if (d is {{localTypeName}} control && control.DataContext is {{vmTypeName}} viewModel)
-                                      {
-                                         if(viewModel is MinimalisticWPF.StructuralDesign.Theme.IThemeApplied theme)
-                                         {
-                                            {{NAMESPACE_CONSTRUCTOR}}DynamicTheme.SetIsolatedValue(theme,typeof({{fullattName}}),"{{fieldRoslyn.PropertyName}}",e.NewValue);
-                                            if(theme.CurrentTheme?.Name == "{{attName}}")
-                                            {
-                                               viewModel.{{fieldRoslyn.PropertyName}} = ({{fieldRoslyn.TypeName}})e.NewValue;
-                                            }            
-                                         }
-                                         control._inner{{attName}}{{fieldRoslyn.PropertyName}}Changed(({{fieldRoslyn.TypeName}})e.OldValue ,({{fieldRoslyn.TypeName}})e.NewValue);
-                                      }
-                                   }
-                                   public void _inner{{attName}}{{fieldRoslyn.PropertyName}}Changed({{fieldRoslyn.TypeName}} oldValue, {{fieldRoslyn.TypeName}} newValue)
-                                   {
-                                      On{{attName}}{{fieldRoslyn.PropertyName}}Changed(oldValue ,newValue);
-                                   }
-                                   partial void On{{attName}}{{fieldRoslyn.PropertyName}}Changed({{fieldRoslyn.TypeName}} oldValue, {{fieldRoslyn.TypeName}} newValue);
-                            """);
-                    }
-                }
-                else
-                {
-                    sourceBuilder.AppendLine($$"""
-                                   public {{fieldRoslyn.TypeName}} {{fieldRoslyn.PropertyName}}
-                                   {
-                                      get => ({{fieldRoslyn.TypeName}})GetValue({{fieldRoslyn.PropertyName}}Property);
-                                      set => SetValue({{fieldRoslyn.PropertyName}}Property, value);
-                                   }
-                                   public static readonly {{NAMESPACE_WINDOWS}}DependencyProperty {{fieldRoslyn.PropertyName}}Property =
-                                      {{NAMESPACE_WINDOWS}}DependencyProperty.Register(
-                                      nameof({{fieldRoslyn.PropertyName}}),
-                                      typeof({{fieldRoslyn.TypeName}}),
-                                      typeof({{localTypeName}}),
-                                      new {{NAMESPACE_WINDOWS}}PropertyMetadata({{fieldRoslyn.Initial.InitialTextParse()}}, _innerRun{{fieldRoslyn.PropertyName}}Changed));   
-                                   public static void _innerRun{{fieldRoslyn.PropertyName}}Changed({{NAMESPACE_WINDOWS}}DependencyObject d, {{NAMESPACE_WINDOWS}}DependencyPropertyChangedEventArgs e)
-                                   {
-                                      if (d is {{localTypeName}} control && control.DataContext is {{vmTypeName}} viewModel)
-                                      {
-                                         viewModel.{{fieldRoslyn.PropertyName}} = ({{fieldRoslyn.TypeName}})e.NewValue;
-                                         control._inner{{fieldRoslyn.PropertyName}}Changed(({{fieldRoslyn.TypeName}})e.OldValue ,({{fieldRoslyn.TypeName}})e.NewValue);
-                                      }
-                                   }
-                                   public void _inner{{fieldRoslyn.PropertyName}}Changed({{fieldRoslyn.TypeName}} oldValue, {{fieldRoslyn.TypeName}} newValue)
-                                   {
-                                      On{{fieldRoslyn.PropertyName}}Changed(oldValue ,newValue);
-                                   }
-                                   partial void On{{fieldRoslyn.PropertyName}}Changed({{fieldRoslyn.TypeName}} oldValue, {{fieldRoslyn.TypeName}} newValue);
-                            """);
-                }
-            }
-
-            return sourceBuilder.ToString();
         }
 
         private void LoadHoverValueInitialBody(StringBuilder builder, IEnumerable<IGrouping<string, Tuple<string, string, IEnumerable<string>>>> themeGroups)

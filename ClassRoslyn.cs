@@ -1,5 +1,7 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace MinimalisticWPF.Generator
@@ -8,6 +10,7 @@ namespace MinimalisticWPF.Generator
     {
         protected const string NAMESPACE_AOP = "global::MinimalisticWPF.AopInterfaces.";
         protected const string NAMESPACE_THEME = "global::MinimalisticWPF.StructuralDesign.Theme.";
+        protected const string FULLNAME_MONOCONFIG = "global::MinimalisticWPF.MonoBehaviourAttribute";
 
         internal ClassRoslyn(ClassDeclarationSyntax classDeclarationSyntax, INamedTypeSymbol namedTypeSymbol, Compilation compilation)
         {
@@ -17,6 +20,7 @@ namespace MinimalisticWPF.Generator
 
             IsAop = AnalizeHelper.IsAopClass(Syntax);
             IsDynamicTheme = AnalizeHelper.IsThemeClass(Symbol, out var headThemes, out var bodyThemes);
+            ReadMonoConfig(namedTypeSymbol);
         }
 
         public ClassDeclarationSyntax Syntax { get; set; }
@@ -25,6 +29,19 @@ namespace MinimalisticWPF.Generator
 
         public bool IsAop { get; set; } = false;
         public bool IsDynamicTheme { get; set; } = false;
+
+        public bool IsMono { get; set; } = false;
+        public double MonoSpan { get; set; } = 17;
+        private void ReadMonoConfig(INamedTypeSymbol symbol)
+        {
+            var attributeData = symbol.GetAttributes()
+                .FirstOrDefault(ad => ad.AttributeClass?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == FULLNAME_MONOCONFIG);
+            if (attributeData != null)
+            {
+                IsMono = true;
+                MonoSpan = (double)attributeData.ConstructorArguments[0].Value!;
+            }
+        }
 
         public string GenerateUsing()
         {
