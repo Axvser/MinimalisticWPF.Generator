@@ -9,8 +9,12 @@ namespace MinimalisticWPF.Generator
     internal abstract class ClassRoslyn
     {
         protected const string NAMESPACE_AOP = "global::MinimalisticWPF.AopInterfaces.";
-        protected const string NAMESPACE_THEME = "global::MinimalisticWPF.StructuralDesign.Theme.";
-        protected const string FULLNAME_MONOCONFIG = "global::MinimalisticWPF.MonoBehaviourAttribute";
+        protected const string NAMESPACE_ITHEME = "global::MinimalisticWPF.StructuralDesign.Theme.";
+        protected const string NAMESPACE_TRANSITOIN = "global::MinimalisticWPF.TransitionSystem.";
+        protected const string NAMESPACE_THEME = "global::MinimalisticWPF.Theme.";
+
+        protected const string FULLNAME_MONOCONFIG = "global::MinimalisticWPF.SourceGeneratorMark.MonoBehaviourAttribute";
+        protected const string FULLNAME_CONSTRUCTOR = "global::MinimalisticWPF.SourceGeneratorMark.ConstructorAttribute";
 
         internal ClassRoslyn(ClassDeclarationSyntax classDeclarationSyntax, INamedTypeSymbol namedTypeSymbol, Compilation compilation)
         {
@@ -48,7 +52,7 @@ namespace MinimalisticWPF.Generator
             StringBuilder sourceBuilder = new();
             if (IsAop)
             {
-                sourceBuilder.AppendLine("using global::MinimalisticWPF;");
+                sourceBuilder.AppendLine("using global::MinimalisticWPF.AspectOriented;");
             }
             sourceBuilder.AppendLine("using global::MinimalisticWPF.TransitionSystem;");
             sourceBuilder.AppendLine();

@@ -12,18 +12,20 @@ namespace MinimalisticWPF.Generator
 {
     internal class ViewRoslyn : ClassRoslyn
     {
-        const string NAMESPACE_CONFIG = "global::MinimalisticWPF.";
-        const string FULLNAME_THEMECONFIG = "global::MinimalisticWPF.ThemeAttribute";
-        const string FULLNAME_HOVERCONFIG = "global::MinimalisticWPF.HoverAttribute";
-        const string FULLNAME_CLICKCONFIG = "global::MinimalisticWPF.ClickModuleAttribute";
+        const string FULLNAME_THEMECONFIG = "global::MinimalisticWPF.SourceGeneratorMark.ThemeAttribute";
+        const string FULLNAME_HOVERCONFIG = "global::MinimalisticWPF.SourceGeneratorMark.HoverAttribute";
+        const string FULLNAME_CLICKCONFIG = "global::MinimalisticWPF.SourceGeneratorMark.ClickModuleAttribute";
         const string FULLNAME_STYLE = "global::System.Windows.Style";
+
         const string NAME_STYLE = "Style";
-        const string NAMESPACE_MODEL = "global::System.ComponentModel.";
         const string NAME_INITIALIZE = "InitializeComponent";
-        const string NAMESPACE_WINDOWS = "global::System.Windows.";
-        const string NAMESPACE_CONSTRUCTOR = "global::MinimalisticWPF.";
         const string TAG_PROXY = "_proxy";
-        const string NAMESPACE_TRANSITOIN = "global::MinimalisticWPF.TransitionSystem.";
+
+        const string NAMESPACE_MODEL = "global::System.ComponentModel.";
+        const string NAMESPACE_WINDOWS = "global::System.Windows.";
+        const string NAMESPACE_HOTKEY = "global::MinimalisticWPF.HotKey.";
+        const string NAMESPACE_IHOTKEY = "global::MinimalisticWPF.StructuralDesign.HotKey.";
+        const string NAMESPACE_SCG = "global::System.Collections.Generic.";
 
         internal ViewRoslyn(ClassDeclarationSyntax classDeclarationSyntax, INamedTypeSymbol namedTypeSymbol, Compilation compilation) : base(classDeclarationSyntax, namedTypeSymbol, compilation)
         {
@@ -42,11 +44,12 @@ namespace MinimalisticWPF.Generator
             LoadPropertySymbolAtTree(namedTypeSymbol, PropertyTree);
             ReadClickConfig(namedTypeSymbol);
             IsInitializable = IsInitializeComponentExist(namedTypeSymbol);
-            IsView = Hovers.Count > 0 || Themes.Count > 0 || IsClick || IsMono;
+            IsHotkey = AnalizeHelper.IsHotKeyClass(namedTypeSymbol);
+            IsView = Hovers.Count > 0 || Themes.Count > 0 || IsClick || IsMono || IsHotkey;
             if (IsView)
             {
                 IsStyleExist = PropertyTree.Any
-                    (p => p.Name == NAME_STYLE && 
+                    (p => p.Name == NAME_STYLE &&
                           p.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == FULLNAME_STYLE);
                 IsHover = Hovers.Any();
             }
@@ -57,6 +60,7 @@ namespace MinimalisticWPF.Generator
         public bool IsClick { get; set; } = false;
         public bool IsStyleExist { get; set; } = false;
         public bool IsHover { get; set; } = false;
+        public bool IsHotkey { get; set; } = false;
 
         List<IPropertySymbol> PropertyTree { get; set; } = [];
 
@@ -92,27 +96,17 @@ namespace MinimalisticWPF.Generator
         }
         private HashSet<string> GetHoverAttributesTexts()
         {
-            // 1. 获取当前类型所属的编译上下文
-            var compilation = Compilation;
-
-            // 2. 精确获取 HoverAttribute 的类型（通过全名匹配）
-            var hoverAttributeType = compilation.GetTypeByMetadataName("MinimalisticWPF.HoverAttribute");
-            if (hoverAttributeType == null)
-            {
-                return new HashSet<string>(); // 若类型不存在，返回空集合
-            }
-
-            // 3. 筛选出所有 HoverAttribute 属性
+            // 1. 筛选出所有 HoverAttribute 属性
             var hoverAttributes = Symbol.GetAttributes()
-                .Where(attr => attr.AttributeClass == hoverAttributeType)
+                .Where(attr => attr.AttributeClass?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == FULLNAME_HOVERCONFIG)
                 .ToList();
 
-            // 4. 收集所有有效的 propertyNames 参数值
+            // 2. 收集所有有效的 propertyNames 参数值
             var propertyNames = new HashSet<string>();
 
             foreach (var attr in hoverAttributes)
             {
-                // 4.1 检查构造函数参数是否存在且是数组类型
+                // 2.1 检查构造函数参数是否存在且是数组类型
                 if (attr.ConstructorArguments.Length == 0)
                     continue;
 
@@ -120,7 +114,7 @@ namespace MinimalisticWPF.Generator
                 if (arg.Kind != TypedConstantKind.Array)
                     continue;
 
-                // 4.2 遍历数组元素，提取字符串值
+                // 2.2 遍历数组元素，提取字符串值
                 foreach (var element in arg.Values)
                 {
                     if (element.Value is string propertyName)
@@ -209,10 +203,12 @@ namespace MinimalisticWPF.Generator
             builder.AppendLine(GenerateNamespace());
             builder.AppendLine(GeneratePartialClass());
             builder.AppendLine(GenerateConstructor());
+            builder.AppendLine(GenerateInitializeMinimalisticWPF());
             builder.AppendLine(GenerateITA());
             builder.AppendLine(GenerateView());
             builder.AppendLine(GenerateHover());
             builder.AppendLine(GenerateHoverControl());
+            builder.AppendLine(GenerateHorKeyComponent());
             builder.AppendLine(GenerateEnd());
 
             return builder.ToString();
@@ -230,7 +226,11 @@ namespace MinimalisticWPF.Generator
             }
             if (IsDynamicTheme)
             {
-                list.Add($"{NAMESPACE_THEME}IThemeApplied");
+                list.Add($"{NAMESPACE_ITHEME}IThemeApplied");
+            }
+            if (IsHotkey)
+            {
+                list.Add($"{NAMESPACE_IHOTKEY}IHotKeyComponent");
             }
             if (list.Count > 0)
             {
@@ -298,10 +298,8 @@ namespace MinimalisticWPF.Generator
 
             var methods = Symbol.GetMembers()
                 .OfType<IMethodSymbol>()
-                .Where(m => m.GetAttributes().Any(att => att.AttributeClass?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == $"{NAMESPACE_CONSTRUCTOR}ConstructorAttribute"))
+                .Where(m => m.GetAttributes().Any(att => att.AttributeClass?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == FULLNAME_CONSTRUCTOR))
                 .ToList();
-
-            var themeGroups = Themes.GroupBy(tuple => tuple.Item1);
 
             StringBuilder builder = new();
             var strAop = $"{NAMESPACE_AOP}{AnalizeHelper.GetInterfaceName(Syntax)}";
@@ -402,6 +400,47 @@ namespace MinimalisticWPF.Generator
             {
                 builder.AppendLine("         InitializeComponent();");
             }
+            builder.AppendLine("         InitializeMinimalisticWPF();");
+            foreach (var method in methods.Where(m => !m.Parameters.Any()))
+            {
+                builder.AppendLine($"         {method.Name}();");
+            }
+            builder.AppendLine("      }");
+
+            var groupedMethods = methods.Where(m => m.Parameters.Any()).GroupBy(m =>
+                string.Join(",", m.Parameters.Select(p => p.Type.ToDisplayString())));
+
+            foreach (var group in groupedMethods)
+            {
+                var parameters = group.Key.Split(',');
+                var parameterList = string.Join(", ", group.First().Parameters.Select(p => $"{p.Type.ToDisplayString()} {p.Name}"));
+                var callParameters = string.Join(", ", group.First().Parameters.Select(p => p.Name));
+
+                builder.AppendLine();
+                builder.AppendLine($"      {acc} {Symbol.Name}({parameterList})");
+                builder.AppendLine("      {");
+                if (IsInitializable)
+                {
+                    builder.AppendLine("         InitializeComponent();");
+                }
+                builder.AppendLine("         InitializeMinimalisticWPF();");
+                foreach (var method in group)
+                {
+                    builder.AppendLine($"         {method.Name}({callParameters});");
+                }
+                builder.AppendLine("      }");
+            }
+
+            return builder.ToString();
+        }
+        public string GenerateInitializeMinimalisticWPF()
+        {
+            var themeGroups = Themes.GroupBy(tuple => tuple.Item1);
+
+            StringBuilder builder = new();
+            var strAop = $"{NAMESPACE_AOP}{AnalizeHelper.GetInterfaceName(Syntax)}";
+            builder.AppendLine($"      private void InitializeMinimalisticWPF()");
+            builder.AppendLine("      {");
             if (IsClick)
             {
                 builder.AppendLine($$"""
@@ -438,16 +477,12 @@ namespace MinimalisticWPF.Generator
             }
             if (IsDynamicTheme)
             {
-                builder.AppendLine($"         {NAMESPACE_CONSTRUCTOR}DynamicTheme.Awake(this);");
+                builder.AppendLine($"         {NAMESPACE_THEME}DynamicTheme.Awake(this);");
             }
             if (IsHover)
             {
                 builder.AppendLine($"         HoveredTransition.SetParams(TransitionParams.Hover);");
                 builder.AppendLine($"         NoHoveredTransition.SetParams(TransitionParams.Hover);");
-            }
-            foreach (var method in methods.Where(m => !m.Parameters.Any()))
-            {
-                builder.AppendLine($"         {method.Name}();");
             }
             if (IsHover)
             {
@@ -474,7 +509,7 @@ namespace MinimalisticWPF.Generator
             builder.AppendLine("         {");
             if (IsDynamicTheme)
             {
-                builder.AppendLine($"            CurrentTheme = global::MinimalisticWPF.DynamicTheme.CurrentTheme;");
+                builder.AppendLine($"            CurrentTheme = {NAMESPACE_THEME}DynamicTheme.CurrentTheme;");
             }
             LoadHoverValueInitialBody(builder, themeGroups);
             builder.AppendLine("         };");
@@ -489,9 +524,14 @@ namespace MinimalisticWPF.Generator
             if (Symbol.Name == "MainWindow")
             {
                 builder.AppendLine($$"""
+                                 SourceInitialized += (s, e) =>
+                                 {
+                                     global::MinimalisticWPF.HotKey.GlobalHotKey.Awake();
+                                 };
                                  Closed += (sender, e) =>
                                  {
-                                     global::MinimalisticWPF.DynamicTheme.Dispose();
+                                     global::MinimalisticWPF.Theme.DynamicTheme.Dispose();
+                                     global::MinimalisticWPF.HotKey.GlobalHotKey.Dispose();
                                  };
                         """);
             }
@@ -513,136 +553,6 @@ namespace MinimalisticWPF.Generator
                 builder.AppendLine(GetMonoAwakeBody());
             }
             builder.AppendLine("      }");
-
-            var groupedMethods = methods.Where(m => m.Parameters.Any()).GroupBy(m =>
-                string.Join(",", m.Parameters.Select(p => p.Type.ToDisplayString())));
-
-            foreach (var group in groupedMethods)
-            {
-                var parameters = group.Key.Split(',');
-                var parameterList = string.Join(", ", group.First().Parameters.Select(p => $"{p.Type.ToDisplayString()} {p.Name}"));
-                var callParameters = string.Join(", ", group.First().Parameters.Select(p => p.Name));
-
-                builder.AppendLine();
-                builder.AppendLine($"      {acc} {Symbol.Name}({parameterList})");
-                builder.AppendLine("      {");
-                if (IsInitializable)
-                {
-                    builder.AppendLine("         InitializeComponent();");
-                }
-                if (IsClick)
-                {
-                    builder.AppendLine($$"""
-                             MouseLeave += (sender, e) =>
-                             {
-                                 _clickdowntime = 0;
-                                 _clickuptime = 0;
-                             };
-                             MouseLeftButtonDown += (sender, e) =>
-                             {
-                                 _clickdowntime++;
-                                 if (_clickdowntime > 0 && _clickuptime > 0)
-                                 {
-                                     Click.Invoke(this, e);
-                                     _clickdowntime = 0;
-                                     _clickuptime = 0;
-                                 }
-                             };
-                             MouseLeftButtonUp += (sender, e) =>
-                             {
-                                 _clickuptime++;
-                                 if (_clickdowntime > 0 && _clickuptime > 0)
-                                 {
-                                     Click?.Invoke(this, e);
-                                     _clickdowntime = 0;
-                                     _clickuptime = 0;
-                                 }
-                             };
-                    """);
-                }
-                if (IsAop)
-                {
-                    builder.AppendLine($"         Proxy = this.CreateProxy<{strAop}>();");
-                }
-                if (IsDynamicTheme)
-                {
-                    builder.AppendLine($"         {NAMESPACE_CONSTRUCTOR}DynamicTheme.Awake(this);");
-                }
-                if (IsHover)
-                {
-                    builder.AppendLine($"         HoveredTransition.SetParams(TransitionParams.Hover);");
-                    builder.AppendLine($"         NoHoveredTransition.SetParams(TransitionParams.Hover);");
-                }
-                foreach (var method in group)
-                {
-                    builder.AppendLine($"         {method.Name}({callParameters});");
-                }
-                if (IsHover)
-                {
-                    builder.AppendLine($$"""
-                         HoveredTransition.TransitionParams.Start += () =>
-                         {
-                             IsHoverChanging = true;
-                         };
-                         HoveredTransition.TransitionParams.Completed += () =>
-                         {
-                             IsHoverChanging = false;
-                         };
-                         NoHoveredTransition.TransitionParams.Start += () =>
-                         {
-                             IsHoverChanging = true;
-                         };
-                         NoHoveredTransition.TransitionParams.Completed += () =>
-                         {
-                             IsHoverChanging = false;
-                         };
-                """);
-                }
-                builder.AppendLine("         Loaded += (sender,e) =>");
-                builder.AppendLine("         {");
-                if (IsDynamicTheme)
-                {
-                    builder.AppendLine($"            CurrentTheme = global::MinimalisticWPF.DynamicTheme.CurrentTheme;");
-                }
-                LoadHoverValueInitialBody(builder, themeGroups);
-                builder.AppendLine("         };");
-                if (IsMono)
-                {
-                    builder.AppendLine($"         var isInDesign = {NAMESPACE_MODEL}DesignerProperties.GetIsInDesignMode(this);\r\n");
-                    builder.AppendLine("         Loaded += async (sender,e) =>");
-                    builder.AppendLine("         {");
-                    builder.AppendLine(GetMonoUpdateBody());
-                    builder.AppendLine("         };");
-                }
-                if (Symbol.Name == "MainWindow")
-                {
-                    builder.AppendLine($$"""
-                                 Closed += (sender, e) =>
-                                 {
-                                     global::MinimalisticWPF.DynamicTheme.Dispose();
-                                 };
-                        """);
-                }
-                if (Hovers.Count > 0)
-                {
-                    builder.AppendLine($$"""
-                             MouseEnter += (sender, e) =>
-                             {
-                                IsHovered = true;
-                             };
-                             MouseLeave += (sender, e) =>
-                             {
-                                IsHovered = false;
-                             };
-                    """);
-                }
-                if (IsMono)
-                {
-
-                    builder.AppendLine(GetMonoAwakeBody());
-                }
-                builder.AppendLine("      }");
-            }
 
             return builder.ToString();
         }
@@ -682,7 +592,7 @@ namespace MinimalisticWPF.Generator
                         symbol.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
                         $"{AnalizeHelper.ExtractThemeName(config.Item2)}{symbol.Name}",
                         AnalizeHelper.GetDefaultInitialText(symbol.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)));
-                        dp_factory.SetterBody.Add($"      global::MinimalisticWPF.DynamicTheme.SetIsolatedValue(target,typeof({config.Item2}),\"{TAG_PROXY}{config.Item1}\",newValue);");
+                        dp_factory.SetterBody.Add($"      global::MinimalisticWPF.Theme.DynamicTheme.SetIsolatedValue(target,typeof({config.Item2}),\"{TAG_PROXY}{config.Item1}\",newValue);");
                         factories.Add(dp_factory);
                     }
                 }
@@ -936,7 +846,7 @@ namespace MinimalisticWPF.Generator
                                         }
                             """);
                         dp_factory2.SetterBody.Add($$"""
-                                  global::MinimalisticWPF.DynamicTheme.SetIsolatedValue(target,typeof({{theme.Item2}}),"{{TAG_PROXY}}{{propertySymbol.Name}}",newValue);
+                                  global::MinimalisticWPF.Theme.DynamicTheme.SetIsolatedValue(target,typeof({{theme.Item2}}),"{{TAG_PROXY}}{{propertySymbol.Name}}",newValue);
                             """);
                         dp_factory2.SetterBody.Add($$"""
                                   if(target.CurrentTheme == typeof({{theme.Item2}}))
@@ -961,6 +871,125 @@ namespace MinimalisticWPF.Generator
 
             return builder.ToString();
         }
+        public string GenerateHorKeyComponent()
+        {
+            if (!IsHotkey) return string.Empty;
+            var className = Symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+            return $$"""
+                         private bool _ishotkeyregistered = false;
+                         public bool IsHotKeyRegistered
+                         {
+                             get => _ishotkeyregistered;
+                             protected set
+                             {
+                                _ishotkeyregistered = value;
+                                if(value)
+                                {
+                                   OnSuccessHotKeyRegister();
+                                }
+                                else
+                                {
+                                   OnFailedHotKeyRegister();
+                                }
+                             }
+                         }
+                         partial void OnFailedHotKeyRegister();
+                         partial void OnSuccessHotKeyRegister();
+
+                         public uint RecordedModifiers
+                         {
+                             get { return (uint)GetValue(RecordedModifiersProperty); }
+                             set { SetValue(RecordedModifiersProperty, value); }
+                         }
+                         public static readonly {{NAMESPACE_WINDOWS}}DependencyProperty RecordedModifiersProperty =
+                             {{NAMESPACE_WINDOWS}}DependencyProperty.Register("RecordedModifiers", typeof(uint), typeof({{className}}), new {{NAMESPACE_WINDOWS}}PropertyMetadata(default(uint), Inner_OnModifiersChanged));
+                         public static void Inner_OnModifiersChanged({{NAMESPACE_WINDOWS}}DependencyObject d, {{NAMESPACE_WINDOWS}}DependencyPropertyChangedEventArgs e)
+                         {
+                             if(d is {{className}} target)
+                             {
+                                global::MinimalisticWPF.HotKey.GlobalHotKey.Unregister((uint)e.OldValue,target.RecordedKey);
+                                var id = global::MinimalisticWPF.HotKey.GlobalHotKey.Register(target);
+                                target.IsHotKeyRegistered = id != 0 && id != -1;
+                                target.OnModifiersChanged((uint)e.OldValue, (uint)e.NewValue);
+                             }                            
+                         }
+                         partial void OnModifiersChanged(uint oldKeys, uint newKeys);
+
+                         public uint RecordedKey
+                         {
+                             get { return (uint)GetValue(RecordedKeyProperty); }
+                             set { SetValue(RecordedKeyProperty, value); }
+                         }
+                         public static readonly {{NAMESPACE_WINDOWS}}DependencyProperty RecordedKeyProperty =
+                             {{NAMESPACE_WINDOWS}}DependencyProperty.Register("RecordedKey", typeof(uint), typeof({{className}}), new {{NAMESPACE_WINDOWS}}PropertyMetadata(default(uint), Inner_OnKeysChanged));
+                         public static void Inner_OnKeysChanged({{NAMESPACE_WINDOWS}}DependencyObject d, {{NAMESPACE_WINDOWS}}DependencyPropertyChangedEventArgs e)
+                         {
+                             if(d is {{className}} target)
+                             {
+                                global::MinimalisticWPF.HotKey.GlobalHotKey.Unregister(target.RecordedModifiers,(uint)e.OldValue);
+                                var id = global::MinimalisticWPF.HotKey.GlobalHotKey.Register(target);
+                                target.IsHotKeyRegistered = id != 0 && id != -1;
+                                target.OnKeysChanged((uint)e.OldValue, (uint)e.NewValue);
+                             }
+                         }
+                         partial void OnKeysChanged(uint oldKeys, uint newKeys);
+
+                         public event {{NAMESPACE_HOTKEY}}HotKeyEventHandler? HotKeyInvoked;
+
+                         public virtual void InvokeHotKey()
+                         {
+                             OnHotKeyHandling();
+                             HotKeyInvoked?.Invoke(this, new {{NAMESPACE_HOTKEY}}HotKeyEventArgs(RecordedModifiers,RecordedKey));
+                             OnHotKeyHandled();
+                         }
+                         partial void OnHotKeyHandling();
+                         partial void OnHotKeyHandled();
+
+                         public virtual void CoverHotKey()
+                         {
+                             OnHotKeyCovering();
+                             modifiers.Clear();
+                             key = 0x0000;
+                             RecordedModifiers = 0x0000;
+                             RecordedKey = 0x0000;
+                             OnHotKeyCovered();
+                         }
+                         partial void OnHotKeyCovering();
+                         partial void OnHotKeyCovered();
+
+                         private {{NAMESPACE_SCG}}HashSet<{{NAMESPACE_HOTKEY}}VirtualModifiers> modifiers = [];
+                         private {{NAMESPACE_HOTKEY}}VirtualKeys key = 0x0000;
+
+                         protected virtual void OnHotKeyReceived(object sender, global::System.Windows.Input.KeyEventArgs e)
+                         {
+                             var input = (e.Key == global::System.Windows.Input.Key.System ? e.SystemKey : e.Key);
+                             if ({{NAMESPACE_HOTKEY}}HotKeyHelper.WinApiModifiersMapping.TryGetValue(input, out var modifier))
+                             {
+                                 if (!modifiers.Remove(modifier))
+                                 {
+                                     modifiers.Add(modifier);
+                                 }
+                             }
+                             else if ({{NAMESPACE_HOTKEY}}HotKeyHelper.WinApiKeysMapping.TryGetValue(input, out var trigger))
+                             {
+                                 key = trigger;
+                             }
+
+                             e.Handled = true;
+                             UpdateHotKey();
+                         }
+
+                         protected virtual void UpdateHotKey()
+                         {
+                             OnHotKeyUpdating();
+                             RecordedModifiers = {{NAMESPACE_HOTKEY}}HotKeyHelper.CombineModifiers(modifiers);
+                             RecordedKey = (uint)key;
+                             OnHotKeyUpdated();
+                         }
+                         partial void OnHotKeyUpdating();
+                         partial void OnHotKeyUpdated();
+                   """;
+        }
 
         private void LoadHoverValueInitialBody(StringBuilder builder, IEnumerable<IGrouping<string, Tuple<string, string, IEnumerable<string>>>> themeGroups)
         {
@@ -975,8 +1004,8 @@ namespace MinimalisticWPF.Generator
                                     ( 
                                         setters.Contains({property.Name}Property) ? 
                                         {property.Name} : 
-                                        ({typeName})(global::MinimalisticWPF.DynamicTheme.GetIsolatedValue(this,global::MinimalisticWPF.DynamicTheme.CurrentTheme,"{TAG_PROXY}{property.Name}")??{property.Name})
-                                    ) : ({typeName})(global::MinimalisticWPF.DynamicTheme.GetIsolatedValue(this,global::MinimalisticWPF.DynamicTheme.CurrentTheme,"{TAG_PROXY}{property.Name}")??{property.Name});
+                                        ({typeName})(global::MinimalisticWPF.Theme.DynamicTheme.GetIsolatedValue(this,global::MinimalisticWPF.Theme.DynamicTheme.CurrentTheme,"{TAG_PROXY}{property.Name}")??{property.Name})
+                                    ) : ({typeName})(global::MinimalisticWPF.Theme.DynamicTheme.GetIsolatedValue(this,global::MinimalisticWPF.Theme.DynamicTheme.CurrentTheme,"{TAG_PROXY}{property.Name}")??{property.Name});
                         """);
             }
             foreach (var hover in Hovers)
@@ -996,8 +1025,8 @@ namespace MinimalisticWPF.Generator
                                     ( 
                                         setters.Contains({hoveredName}Property) ? 
                                         {hoveredName} : 
-                                        ({typeName})(global::MinimalisticWPF.DynamicTheme.GetIsolatedValue(this,typeof({theme.Item2}),"{TAG_PROXY}{propertySymbol.Name}")??{propertySymbol.Name})
-                                    ) : ({typeName})(global::MinimalisticWPF.DynamicTheme.GetIsolatedValue(this,typeof({theme.Item2}),"{TAG_PROXY}{propertySymbol.Name}")??{propertySymbol.Name});
+                                        ({typeName})(global::MinimalisticWPF.Theme.DynamicTheme.GetIsolatedValue(this,typeof({theme.Item2}),"{TAG_PROXY}{propertySymbol.Name}")??{propertySymbol.Name})
+                                    ) : ({typeName})(global::MinimalisticWPF.Theme.DynamicTheme.GetIsolatedValue(this,typeof({theme.Item2}),"{TAG_PROXY}{propertySymbol.Name}")??{propertySymbol.Name});
                          """);
                         var nohoveredName = $"{themeName}NoHovered{hover}";
                         builder.AppendLine($"""                                  
@@ -1005,8 +1034,8 @@ namespace MinimalisticWPF.Generator
                                     ( 
                                         setters.Contains({nohoveredName}Property) ? 
                                         {nohoveredName} : 
-                                        ({typeName})(global::MinimalisticWPF.DynamicTheme.GetIsolatedValue(this,typeof({theme.Item2}),"{TAG_PROXY}{propertySymbol.Name}")??{propertySymbol.Name})
-                                    ) : ({typeName})(global::MinimalisticWPF.DynamicTheme.GetIsolatedValue(this,typeof({theme.Item2}),"{TAG_PROXY}{propertySymbol.Name}")??{propertySymbol.Name});
+                                        ({typeName})(global::MinimalisticWPF.Theme.DynamicTheme.GetIsolatedValue(this,typeof({theme.Item2}),"{TAG_PROXY}{propertySymbol.Name}")??{propertySymbol.Name})
+                                    ) : ({typeName})(global::MinimalisticWPF.Theme.DynamicTheme.GetIsolatedValue(this,typeof({theme.Item2}),"{TAG_PROXY}{propertySymbol.Name}")??{propertySymbol.Name});
                          """);
                     }
                 }

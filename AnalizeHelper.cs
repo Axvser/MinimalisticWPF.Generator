@@ -10,7 +10,8 @@ namespace MinimalisticWPF.Generator
 {
     internal static class AnalizeHelper
     {
-        const string FULLNAME_THEME = "global::MinimalisticWPF.ThemeAttribute";
+        const string FULLNAME_THEME = "global::MinimalisticWPF.SourceGeneratorMark.ThemeAttribute";
+        const string FULLNAME_HOTKEY = "global::MinimalisticWPF.SourceGeneratorMark.HotKeyComponentAttribute";
         const string FULLNAME_ITHEMEATTRIBUTE = "global::MinimalisticWPF.StructuralDesign.Theme.IThemeAttribute";
 
         const string NAME_ASPECTORIENTED = "AspectOriented";
@@ -26,6 +27,10 @@ namespace MinimalisticWPF.Generator
                     .Any(member => member.AttributeLists
                     .SelectMany(al => al.Attributes)
                     .Any(attr => attr.Name.ToString() == NAME_ASPECTORIENTED));
+        }
+        internal static bool IsHotKeyClass(INamedTypeSymbol namedTypeSymbol)
+        {
+            return namedTypeSymbol.GetAttributes().Any(attr => attr.AttributeClass?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == FULLNAME_HOTKEY);
         }
         internal static bool IsThemeClass(INamedTypeSymbol namedTypeSymbol, out IEnumerable<AttributeData> headThemes, out IEnumerable<Tuple<IFieldSymbol, IEnumerable<AttributeData>>> bodyThemes)
         {
@@ -203,14 +208,16 @@ namespace MinimalisticWPF.Generator
 
             // 步骤2：定位最后一个命名空间分隔符
             int lastDot = withoutArgs.LastIndexOf('.');
+            int lastColon = withoutArgs.LastIndexOf("::");
             string candidate = (lastDot >= 0) ?
                 withoutArgs.Substring(lastDot + 1) :
+                (lastColon >= 0) ?
+                withoutArgs.Substring(lastColon + 2) :
                 withoutArgs;
 
             // 步骤3：严格校验名称规范
             candidate = candidate.Trim();
-            bool hasInvalidChars = candidate.Contains('.') || candidate.Contains('(');
-            return hasInvalidChars ? string.Empty : candidate;
+            return candidate;
         }
 
         private static string GetNamespace(ClassDeclarationSyntax classDeclaration)

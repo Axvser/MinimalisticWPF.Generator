@@ -11,8 +11,6 @@ namespace MinimalisticWPF.Generator
     internal class ViewModelRoslyn : ClassRoslyn
     {
         const string NAMESPACE_MVVM = "global::System.ComponentModel.";
-        const string NAMESPACE_CONSTRUCTOR = "global::MinimalisticWPF.";
-        const string NAMESPACE_TRANSITOIN = "global::MinimalisticWPF.TransitionSystem.";
 
         internal ViewModelRoslyn(ClassDeclarationSyntax classDeclarationSyntax, INamedTypeSymbol namedTypeSymbol, Compilation compilation) : base(classDeclarationSyntax, namedTypeSymbol, compilation)
         {
@@ -84,7 +82,7 @@ namespace MinimalisticWPF.Generator
             }
             if (IsDynamicTheme)
             {
-                list.Add($"{NAMESPACE_THEME}IThemeApplied");
+                list.Add($"{NAMESPACE_ITHEME}IThemeApplied");
             }
             if (list.Count > 0)
             {
@@ -156,7 +154,7 @@ namespace MinimalisticWPF.Generator
 
             var methods = Symbol.GetMembers()
                 .OfType<IMethodSymbol>()
-                .Where(m => m.GetAttributes().Any(att => att.AttributeClass?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == $"{NAMESPACE_CONSTRUCTOR}ConstructorAttribute"))
+                .Where(m => m.GetAttributes().Any(att => att.AttributeClass?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == $"{NAMESPACE_THEME}ConstructorAttribute"))
                 .ToList();
 
             StringBuilder builder = new();
@@ -177,7 +175,7 @@ namespace MinimalisticWPF.Generator
             }
             if (IsDynamicTheme)
             {
-                builder.AppendLine($"         {NAMESPACE_CONSTRUCTOR}DynamicTheme.Awake(this);");
+                builder.AppendLine($"         {NAMESPACE_THEME}DynamicTheme.Awake(this);");
             }
             if (FieldRoslyns.Any(f => f.CanHover))
             {
@@ -230,7 +228,7 @@ namespace MinimalisticWPF.Generator
                 }
                 if (IsDynamicTheme)
                 {
-                    builder.AppendLine($"         {NAMESPACE_CONSTRUCTOR}DynamicTheme.Awake(this);");
+                    builder.AppendLine($"         {NAMESPACE_THEME}DynamicTheme.Awake(this);");
                 }
                 if (FieldRoslyns.Any(f => f.CanHover))
                 {
@@ -392,7 +390,7 @@ namespace MinimalisticWPF.Generator
                 {
                     foreach (var (fullthemeText, themeText) in fieldRoslyn.ThemeAttributes.Select(t => (t.Split('(')[0], AnalizeHelper.ExtractThemeName(t))))
                     {
-                        sourceBuilder.AppendLine($"      private {fieldRoslyn.TypeName} _{themeText}Hovered{fieldRoslyn.PropertyName} = ({fieldRoslyn.TypeName}){NAMESPACE_CONSTRUCTOR}DynamicTheme.GetSharedValue(typeof({Symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}),typeof({fullthemeText}),\"{fieldRoslyn.PropertyName}\");");
+                        sourceBuilder.AppendLine($"      private {fieldRoslyn.TypeName} _{themeText}Hovered{fieldRoslyn.PropertyName} = ({fieldRoslyn.TypeName}){NAMESPACE_THEME}DynamicTheme.GetSharedValue(typeof({Symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}),typeof({fullthemeText}),\"{fieldRoslyn.PropertyName}\");");
                         sourceBuilder.AppendLine($"      public {fieldRoslyn.TypeName} {themeText}Hovered{fieldRoslyn.PropertyName}");
                         sourceBuilder.AppendLine("      {");
                         sourceBuilder.AppendLine($"         get => _{themeText}Hovered{fieldRoslyn.PropertyName};");
@@ -416,7 +414,7 @@ namespace MinimalisticWPF.Generator
                         sourceBuilder.AppendLine($"      partial void On{themeText}Hovered{fieldRoslyn.PropertyName}Changed({fieldRoslyn.TypeName} oldValue,{fieldRoslyn.TypeName} newValue);");
                         sourceBuilder.AppendLine();
 
-                        sourceBuilder.AppendLine($"      private {fieldRoslyn.TypeName} _{themeText}NoHovered{fieldRoslyn.PropertyName} = ({fieldRoslyn.TypeName}){NAMESPACE_CONSTRUCTOR}DynamicTheme.GetSharedValue(typeof({Symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}),typeof({fullthemeText}),\"{fieldRoslyn.PropertyName}\");");
+                        sourceBuilder.AppendLine($"      private {fieldRoslyn.TypeName} _{themeText}NoHovered{fieldRoslyn.PropertyName} = ({fieldRoslyn.TypeName}){NAMESPACE_THEME}DynamicTheme.GetSharedValue(typeof({Symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}),typeof({fullthemeText}),\"{fieldRoslyn.PropertyName}\");");
                         sourceBuilder.AppendLine($"      public {fieldRoslyn.TypeName} {themeText}NoHovered{fieldRoslyn.PropertyName}");
                         sourceBuilder.AppendLine("      {");
                         sourceBuilder.AppendLine($"         get => _{themeText}NoHovered{fieldRoslyn.PropertyName};");
@@ -435,7 +433,7 @@ namespace MinimalisticWPF.Generator
                                         }
                             """);
                         sourceBuilder.AppendLine($"            On{themeText}NoHovered{fieldRoslyn.PropertyName}Changed(oldValue,value);");
-                        sourceBuilder.AppendLine($"            {NAMESPACE_CONSTRUCTOR}DynamicTheme.SetIsolatedValue(this,typeof({fullthemeText}),\"{fieldRoslyn.PropertyName}\",value);");
+                        sourceBuilder.AppendLine($"            {NAMESPACE_THEME}DynamicTheme.SetIsolatedValue(this,typeof({fullthemeText}),\"{fieldRoslyn.PropertyName}\",value);");
                         sourceBuilder.AppendLine("         }");
                         sourceBuilder.AppendLine("      }");
                         sourceBuilder.AppendLine($"      partial void On{themeText}NoHovered{fieldRoslyn.PropertyName}Changed({fieldRoslyn.TypeName} oldValue,{fieldRoslyn.TypeName} newValue);");

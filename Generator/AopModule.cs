@@ -28,7 +28,7 @@ namespace MinimalisticWPF.Generator
                     SyntaxFactory.SingletonSeparatedList<BaseTypeSyntax>(
                         SyntaxFactory.SimpleBaseType(
                             SyntaxFactory.QualifiedName(
-                                SyntaxFactory.ParseName("global::MinimalisticWPF"),
+                                SyntaxFactory.ParseName("global::MinimalisticWPF.AspectOriented"),
                                 SyntaxFactory.IdentifierName("IProxy")))));
                 var interfaceDeclaration = SyntaxFactory.InterfaceDeclaration(interfaceName)
                     .AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword))
