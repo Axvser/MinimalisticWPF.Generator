@@ -315,38 +315,36 @@ namespace MinimalisticWPF.Generator
             if (IsAop)
             {
                 builder.AppendLine($$"""
-                                           public {{strAop}} Proxy { get; private set; }
+                                           public {{strAop}}? Proxy { get; private set; }
                                      """);
                 builder.AppendLine();
             }
-
+            var classTypeName = Symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
             if (IsMono)
             {
                 builder.AppendLine($$"""
                           private global::System.Threading.CancellationTokenSource? cts_mono = null;
 
-                          private bool isactive = true;
-                          public bool IsActive
+                          public bool CanMonoBehaviour
                           {
-                              get => isactive;
-                              private set => isactive = value;
+                              get { return (bool)GetValue(CanMonoBehaviourProperty); }
+                              set { SetValue(CanMonoBehaviourProperty, value); }
                           }
-
-                          public async void SetIsActive(bool value)
-                          {
-                              if (value != IsActive)
+                          public static readonly global::System.Windows.DependencyProperty CanMonoBehaviourProperty =
+                              global::System.Windows.DependencyProperty.Register("CanMonoBehaviour", typeof(bool), typeof({{classTypeName}}), new global::System.Windows.PropertyMetadata(true, async (dp, e) =>
                               {
-                                  IsActive = value;
-                                  if (value)
+                                  if(dp is {{classTypeName}} target)
                                   {
-                                      await _inner_Update();
+                                      if ((bool)e.NewValue)
+                                      {
+                                          await target._inner_Update();
+                                      }
+                                      else
+                                      {
+                                          target._innerCleanMonoToken();
+                                      }
                                   }
-                                  else
-                                  {
-                                      _innerCleanMonoToken();
-                                  }
-                              }
-                          }
+                              }));
 
                           private async Task _inner_Update()
                           {
@@ -357,9 +355,9 @@ namespace MinimalisticWPF.Generator
 
                               try
                               {
-                                 if(IsActive) Start();
+                                 if(CanMonoBehaviour) Start();
 
-                                 while (IsActive && !newmonocts.Token.IsCancellationRequested)
+                                 while (CanMonoBehaviour && !newmonocts.Token.IsCancellationRequested)
                                  {
                                      Update();
                                      LateUpdate();
@@ -372,7 +370,11 @@ namespace MinimalisticWPF.Generator
                               }
                               finally
                               {
-                                  if (global::System.Threading.Interlocked.CompareExchange(ref cts_mono, null, newmonocts) == newmonocts) newmonocts.Dispose();
+                                  if (global::System.Threading.Interlocked.CompareExchange(ref cts_mono, null, newmonocts) == newmonocts) 
+                                  {
+                                      newmonocts.Dispose();
+                                  }
+                                  ExitMonoBehaviour();
                               }
                           }
 
@@ -380,6 +382,7 @@ namespace MinimalisticWPF.Generator
                           partial void Start();
                           partial void Update();
                           partial void LateUpdate();
+                          partial void ExitMonoBehaviour();
 
                           private void _innerCleanMonoToken()
                           {
@@ -1001,20 +1004,18 @@ namespace MinimalisticWPF.Generator
         {
             if (!IsStyleExist) return;
             builder.AppendLine($"            var setters = Style?.Setters?.OfType<{NAMESPACE_WINDOWS}Setter>()?.Select(s=>s.Property)?.ToHashSet();");
-            builder.AppendLine("            if(setters != null)");
-            builder.AppendLine("            {");
-            builder.AppendLine("                var issetterExsit = setters?.Any() ?? false;");
+            builder.AppendLine("             var issetterExsit = setters?.Any() ?? false;");
 
             foreach (var property in PropertyTree.Where(p => Themes.Any(t => t.Item1 == p.Name)))
             {
                 var typeName = property.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
                 builder.AppendLine($"""                                  
-                                        {property.Name} = issetterExsit ? 
-                                        ( 
-                                            setters.Contains({property.Name}Property) ? 
-                                            {property.Name} : 
-                                            ({typeName})(global::MinimalisticWPF.Theme.DynamicTheme.GetIsolatedValue(this,global::MinimalisticWPF.Theme.DynamicTheme.CurrentTheme,"{TAG_PROXY}{property.Name}")??{property.Name})
-                                        ) : ({typeName})(global::MinimalisticWPF.Theme.DynamicTheme.GetIsolatedValue(this,global::MinimalisticWPF.Theme.DynamicTheme.CurrentTheme,"{TAG_PROXY}{property.Name}")??{property.Name});
+                                     {property.Name} = issetterExsit ? 
+                                     ( 
+                                         (setters?.Contains({property.Name}Property)??false) ? 
+                                         {property.Name} : 
+                                         ({typeName})(global::MinimalisticWPF.Theme.DynamicTheme.GetIsolatedValue(this,global::MinimalisticWPF.Theme.DynamicTheme.CurrentTheme,"{TAG_PROXY}{property.Name}")??{property.Name})
+                                     ) : ({typeName})(global::MinimalisticWPF.Theme.DynamicTheme.GetIsolatedValue(this,global::MinimalisticWPF.Theme.DynamicTheme.CurrentTheme,"{TAG_PROXY}{property.Name}")??{property.Name});
                         """);
             }
             foreach (var hover in Hovers)
@@ -1030,21 +1031,21 @@ namespace MinimalisticWPF.Generator
                         var typeName = propertySymbol.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
                         var hoveredName = $"{themeName}Hovered{hover}";
                         builder.AppendLine($"""                                  
-                                        {hoveredName} = issetterExsit ? 
-                                        ( 
-                                            setters.Contains({hoveredName}Property) ? 
-                                            {hoveredName} : 
-                                            ({typeName})(global::MinimalisticWPF.Theme.DynamicTheme.GetIsolatedValue(this,typeof({theme.Item2}),"{TAG_PROXY}{propertySymbol.Name}")??{propertySymbol.Name})
-                                        ) : ({typeName})(global::MinimalisticWPF.Theme.DynamicTheme.GetIsolatedValue(this,typeof({theme.Item2}),"{TAG_PROXY}{propertySymbol.Name}")??{propertySymbol.Name});
+                                     {hoveredName} = issetterExsit ? 
+                                     ( 
+                                         (setters?.Contains({hoveredName}Property)??false) ? 
+                                         {hoveredName} : 
+                                         ({typeName})(global::MinimalisticWPF.Theme.DynamicTheme.GetIsolatedValue(this,typeof({theme.Item2}),"{TAG_PROXY}{propertySymbol.Name}")??{propertySymbol.Name})
+                                     ) : ({typeName})(global::MinimalisticWPF.Theme.DynamicTheme.GetIsolatedValue(this,typeof({theme.Item2}),"{TAG_PROXY}{propertySymbol.Name}")??{propertySymbol.Name});
                          """);
                         var nohoveredName = $"{themeName}NoHovered{hover}";
                         builder.AppendLine($"""                                  
-                                        {nohoveredName} = issetterExsit ? 
-                                        ( 
-                                            setters.Contains({nohoveredName}Property) ? 
-                                            {nohoveredName} : 
-                                            ({typeName})(global::MinimalisticWPF.Theme.DynamicTheme.GetIsolatedValue(this,typeof({theme.Item2}),"{TAG_PROXY}{propertySymbol.Name}")??{propertySymbol.Name})
-                                        ) : ({typeName})(global::MinimalisticWPF.Theme.DynamicTheme.GetIsolatedValue(this,typeof({theme.Item2}),"{TAG_PROXY}{propertySymbol.Name}")??{propertySymbol.Name});
+                                     {nohoveredName} = issetterExsit ? 
+                                     ( 
+                                         (setters?.Contains({nohoveredName}Property)??false) ? 
+                                         {nohoveredName} : 
+                                         ({typeName})(global::MinimalisticWPF.Theme.DynamicTheme.GetIsolatedValue(this,typeof({theme.Item2}),"{TAG_PROXY}{propertySymbol.Name}")??{propertySymbol.Name})
+                                     ) : ({typeName})(global::MinimalisticWPF.Theme.DynamicTheme.GetIsolatedValue(this,typeof({theme.Item2}),"{TAG_PROXY}{propertySymbol.Name}")??{propertySymbol.Name});
                          """);
                     }
                 }
@@ -1052,27 +1053,25 @@ namespace MinimalisticWPF.Generator
                 {
                     var hoveredName = $"Hovered{hover}";
                     builder.AppendLine($"""                                  
-                                        {hoveredName} = issetterExsit ? 
-                                        ( 
-                                            setters.Contains({hoveredName}Property) ? 
-                                            {hoveredName} : 
-                                            {propertySymbol.Name}
-                                        ) : {propertySymbol.Name};
+                                     {hoveredName} = issetterExsit ? 
+                                     ( 
+                                         (setters?.Contains({hoveredName}Property)??false) ? 
+                                         {hoveredName} : 
+                                         {propertySymbol.Name}
+                                     ) : {propertySymbol.Name};
                          """);
                     var nohoveredName = $"NoHovered{hover}";
                     builder.AppendLine($"""                                  
-                                        {nohoveredName} = issetterExsit ? 
-                                        ( 
-                                            setters.Contains({nohoveredName}Property) ? 
-                                            {nohoveredName} : 
-                                            {propertySymbol.Name}
-                                        ) : {propertySymbol.Name};
+                                     {nohoveredName} = issetterExsit ? 
+                                     ( 
+                                         (setters?.Contains({nohoveredName}Property)??false) ? 
+                                         {nohoveredName} : 
+                                         {propertySymbol.Name}
+                                     ) : {propertySymbol.Name};
                          """);
                     builder.AppendLine($"               {propertySymbol.Name} = {nohoveredName};");
                 }
             }
-
-            builder.AppendLine("            }");
             if (IsHover)
             {
                 builder.AppendLine("            ReLoadHoverTransition();");
@@ -1083,7 +1082,7 @@ namespace MinimalisticWPF.Generator
             return IsMono switch
             {
                 true => $$"""
-                                if (!isInDesign)
+                                if (!isInDesign && CanMonoBehaviour)
                                 {
                                     await _inner_Update();
                                 }

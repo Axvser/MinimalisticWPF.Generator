@@ -170,18 +170,18 @@ namespace MinimalisticWPF.Generator
                 builder.AppendLine($$"""
                           private global::System.Threading.CancellationTokenSource? cts_mono = null;
 
-                          private bool isactive = true;
-                          public bool IsActive
+                          private bool _canmonobehaviour = true;
+                          public bool CanMonoBehaviour
                           {
-                              get => isactive;
-                              private set => isactive = value;
+                              get => _canmonobehaviour;
+                              private set => _canmonobehaviour = value;
                           }
 
-                          public async void SetIsActive(bool value)
+                          public async void SetCanMonoBehaviour(bool value)
                           {
-                              if (value != IsActive)
+                              if (value != CanMonoBehaviour)
                               {
-                                  IsActive = value;
+                                  CanMonoBehaviour = value;
                                   if (value)
                                   {
                                       await _inner_Update();
@@ -202,9 +202,9 @@ namespace MinimalisticWPF.Generator
 
                               try
                               {
-                                 if(IsActive) Start();
+                                 if(CanMonoBehaviour) Start();
 
-                                 while (IsActive && !newmonocts.Token.IsCancellationRequested)
+                                 while (CanMonoBehaviour && !newmonocts.Token.IsCancellationRequested)
                                  {
                                      Update();
                                      LateUpdate();
@@ -217,7 +217,11 @@ namespace MinimalisticWPF.Generator
                               }
                               finally
                               {
-                                  if (global::System.Threading.Interlocked.CompareExchange(ref cts_mono, null, newmonocts) == newmonocts) newmonocts.Dispose();
+                                  if (global::System.Threading.Interlocked.CompareExchange(ref cts_mono, null, newmonocts) == newmonocts) 
+                                  {
+                                      newmonocts.Dispose();
+                                  }
+                                  ExitMonoBehaviour();
                               }
                           }
 
@@ -225,6 +229,7 @@ namespace MinimalisticWPF.Generator
                           partial void Start();
                           partial void Update();
                           partial void LateUpdate();
+                          partial void ExitMonoBehaviour();
 
                           private void _innerCleanMonoToken()
                           {
@@ -337,11 +342,14 @@ namespace MinimalisticWPF.Generator
             return IsMono switch
             {
                 true => $$"""
-                                   var monofunc = new Func<Task>(async () =>
+                                   if(CanMonoBehaviour)
                                    {
-                                       await _inner_Update();
-                                   });
-                                   monofunc?.Invoke();
+                                       var monofunc = new Func<Task>(async () =>
+                                       {
+                                           await _inner_Update();
+                                       });
+                                       monofunc?.Invoke();
+                                   }
                           """,
                 _ => string.Empty
             };
