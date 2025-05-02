@@ -174,7 +174,25 @@ namespace MinimalisticWPF.Generator
                           public bool CanMonoBehaviour
                           {
                               get => _canmonobehaviour;
-                              private set => _canmonobehaviour = value;
+                              set
+                              {
+                                  if(_canmonobehaviour != value)
+                                  {
+                                      _canmonobehaviour = value;
+                                      if (value)
+                                      {
+                                          var monofunc = new Func<Task>(async () =>
+                                          {
+                                              await _inner_Update();
+                                          });
+                                          monofunc?.Invoke();
+                                      }
+                                      else
+                                      {
+                                          _innerCleanMonoToken();
+                                      }
+                                  }
+                              }
                           }
 
                           public async void SetCanMonoBehaviour(bool value)
