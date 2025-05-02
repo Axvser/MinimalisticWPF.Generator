@@ -15,7 +15,6 @@ namespace MinimalisticWPF.Generator
         private const string NAMESPACE_MF = "global::MinimalisticWPF.MessageFlow.";
 
         private const string FULLNAME_IMF = "global::MinimalisticWPF.StructuralDesign.Message.IMessageFlow";
-        private const string FULLNAME_PMF = "global::MinimalisticWPF.SourceGeneratorMark.PublishMessageFlowsAttribute";
         private const string FULLNAME_SMF = "global::MinimalisticWPF.SourceGeneratorMark.SubscribeMessageFlowsAttribute";
         const string PUBLIC = "public";
 
@@ -299,30 +298,35 @@ namespace MinimalisticWPF.Generator
             var builder = new StringBuilder();
 
             builder.AppendLine($$"""
-                      public event {{NAMESPACE_MF}}MessageFlowHandler? MessageFlowRecieved;
                       public void SendMessageFlow(string name, params object?[] messages)
                       {
                           {{NAMESPACE_MF}}MessageCentral.SendMessage(this, name, messages);
                       }
+                """);
+            if (IsMessageFlow)
+            {
+                builder.AppendLine($$"""
+                      public event {{NAMESPACE_MF}}MessageFlowHandler? MessageFlowRecieved;
                       public void RecieveMessageFlow(object sender, {{NAMESPACE_MF}}MessageFlowArgs e)
                       {
                           MessageFlowRecieved?.Invoke(sender, e);
                           {{NAMESPACE_MF}}MessageFlowHandler? handler = e.Name switch
                           {
                 """);
-            foreach (var mfs in SubscribedMessageFlows)
-            {
-                builder.AppendLine($"              \"{mfs}\" => Flow{mfs},");
-            }
-            builder.AppendLine($$"""
+                foreach (var mfs in SubscribedMessageFlows)
+                {
+                    builder.AppendLine($"              \"{mfs}\" => Flow{mfs},");
+                }
+                builder.AppendLine($$"""
                               _ => null
                           };
                           handler?.Invoke(sender, e);
                       }
                 """);
-            foreach (var mfs in SubscribedMessageFlows)
-            {
-                builder.AppendLine($"      private partial void Flow{mfs}(object sender, {NAMESPACE_MF}MessageFlowArgs e);");
+                foreach (var mfs in SubscribedMessageFlows)
+                {
+                    builder.AppendLine($"      private partial void Flow{mfs}(object sender, {NAMESPACE_MF}MessageFlowArgs e);");
+                }
             }
 
             return builder.ToString();
