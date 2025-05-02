@@ -5,8 +5,6 @@ VisualStudioVersion = 17.13.35913.81
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MinimalisticWPF.Generator", "MinimalisticWPF.Generator.csproj", "{17BED35A-0219-404A-8927-53B385E6928E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test-Mini-Generator", "..\Test-Mini-Generator\Test-Mini-Generator.csproj", "{05C3F072-4AF1-96A6-D1F2-122EF92DBB4A}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -17,10 +15,6 @@ Global
 		{17BED35A-0219-404A-8927-53B385E6928E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{17BED35A-0219-404A-8927-53B385E6928E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{17BED35A-0219-404A-8927-53B385E6928E}.Release|Any CPU.Build.0 = Release|Any CPU
-		{05C3F072-4AF1-96A6-D1F2-122EF92DBB4A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{05C3F072-4AF1-96A6-D1F2-122EF92DBB4A}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{05C3F072-4AF1-96A6-D1F2-122EF92DBB4A}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{05C3F072-4AF1-96A6-D1F2-122EF92DBB4A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

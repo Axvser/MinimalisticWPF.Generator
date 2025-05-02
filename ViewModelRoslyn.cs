@@ -4,6 +4,7 @@ using MinimalisticWPF.Generator.Factory;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.NetworkInformation;
 using System.Text;
 
 namespace MinimalisticWPF.Generator
@@ -11,17 +12,44 @@ namespace MinimalisticWPF.Generator
     internal class ViewModelRoslyn : ClassRoslyn
     {
         private const string NAMESPACE_MVVM = "global::System.ComponentModel.";
+        private const string NAMESPACE_MF = "global::MinimalisticWPF.MessageFlow.";
+
+        private const string FULLNAME_IMF = "global::MinimalisticWPF.StructuralDesign.Message.IMessageFlow";
+        private const string FULLNAME_PMF = "global::MinimalisticWPF.SourceGeneratorMark.PublishMessageFlowsAttribute";
+        private const string FULLNAME_SMF = "global::MinimalisticWPF.SourceGeneratorMark.SubscribeMessageFlowsAttribute";
         const string PUBLIC = "public";
 
         internal ViewModelRoslyn(ClassDeclarationSyntax classDeclarationSyntax, INamedTypeSymbol namedTypeSymbol, Compilation compilation) : base(classDeclarationSyntax, namedTypeSymbol, compilation)
         {
-            IsViewModel = AnalizeHelper.IsViewModelClass(Symbol, out var vmfields);
+            var isvmatt = AnalizeHelper.IsViewModelClass(Symbol, out var vmfields);
             FieldRoslyns = vmfields.Select(field => new FieldRoslyn(field));
+            TryReadSubscribedMessageFlows(namedTypeSymbol);
+            IsMessageFlow = SubscribedMessageFlows.Count > 0;
+            IsViewModel = isvmatt || IsMessageFlow;
         }
 
         public bool IsViewModel { get; set; } = false;
+        public bool IsMessageFlow { get; set; } = false;
+
+        public HashSet<string> SubscribedMessageFlows { get; set; } = [];
 
         public IEnumerable<FieldRoslyn> FieldRoslyns { get; set; } = [];
+
+        private void TryReadSubscribedMessageFlows(INamedTypeSymbol symbol)
+        {
+            var attributeData = symbol.GetAttributes()
+                .FirstOrDefault(ad => ad.AttributeClass?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == FULLNAME_SMF);
+            if (attributeData != null)
+            {
+                foreach (var p in attributeData.ConstructorArguments[0].Values)
+                {
+                    if (p.Value is string str && !string.IsNullOrEmpty(str))
+                    {
+                        SubscribedMessageFlows.Add(str.Trim());
+                    }
+                }
+            }
+        }
 
         public string Generate()
         {
@@ -33,6 +61,7 @@ namespace MinimalisticWPF.Generator
             builder.AppendLine(GenerateConstructor());
             builder.AppendLine(GenerateIPC());
             builder.AppendLine(GenerateInitializeMinimalisticWPF());
+            builder.AppendLine(GenerateIMF());
             builder.AppendLine(GenerateEnd());
 
             return builder.ToString();
@@ -47,6 +76,10 @@ namespace MinimalisticWPF.Generator
             {
                 list.Add($"{NAMESPACE_MVVM}INotifyPropertyChanged");
                 list.Add($"{NAMESPACE_MVVM}INotifyPropertyChanging");
+            }
+            if (IsMessageFlow)
+            {
+                list.Add(FULLNAME_IMF);
             }
             if (IsAop)
             {
@@ -95,7 +128,7 @@ namespace MinimalisticWPF.Generator
                 var factory = new PropertyFactory(field, PUBLIC, false);
                 var intercept = field.SetterValidation switch
                 {
-                    1 => $"if (!{field.FieldName}?.Equals(value) ?? false) return;",
+                    1 => $"if ({field.FieldName}?.Equals(value) ?? false) return;",
                     2 => $"if (!CanUpdate{field.PropertyName}(old,value)) return;",
                     _ => string.Empty
                 };
@@ -253,7 +286,44 @@ namespace MinimalisticWPF.Generator
                 builder.AppendLine(GetMonoAwakeBody());
                 builder.AppendLine(GetMonoUpdateBody());
             }
+            foreach (var mfs in SubscribedMessageFlows)
+            {
+                builder.AppendLine($"         {NAMESPACE_MF}MessageCentral.SubscribeMessageFlow(\"{mfs}\", this);");
+            }
             builder.AppendLine("      }");
+
+            return builder.ToString();
+        }
+        public string GenerateIMF()
+        {
+            var builder = new StringBuilder();
+
+            builder.AppendLine($$"""
+                      public event {{NAMESPACE_MF}}MessageFlowHandler? MessageFlowRecieved;
+                      public void SendMessageFlow(string name, params object?[] messages)
+                      {
+                          {{NAMESPACE_MF}}MessageCentral.SendMessage(this, name, messages);
+                      }
+                      public void RecieveMessageFlow(object sender, {{NAMESPACE_MF}}MessageFlowArgs e)
+                      {
+                          MessageFlowRecieved?.Invoke(sender, e);
+                          {{NAMESPACE_MF}}MessageFlowHandler? handler = e.Name switch
+                          {
+                """);
+            foreach (var mfs in SubscribedMessageFlows)
+            {
+                builder.AppendLine($"              \"{mfs}\" => Flow{mfs},");
+            }
+            builder.AppendLine($$"""
+                              _ => null
+                          };
+                          handler?.Invoke(sender, e);
+                      }
+                """);
+            foreach (var mfs in SubscribedMessageFlows)
+            {
+                builder.AppendLine($"      private partial void Flow{mfs}(object sender, {NAMESPACE_MF}MessageFlowArgs e);");
+            }
 
             return builder.ToString();
         }

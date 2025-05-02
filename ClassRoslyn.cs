@@ -23,7 +23,7 @@ namespace MinimalisticWPF.Generator
             Symbol = namedTypeSymbol;
             Compilation = compilation;
 
-            IsAop = AnalizeHelper.IsAopClass(Syntax);
+            IsAop = AnalizeHelper.IsAopClass(classDeclarationSyntax);
             ReadMonoConfig(namedTypeSymbol);
         }
 
