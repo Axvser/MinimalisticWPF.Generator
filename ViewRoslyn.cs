@@ -279,7 +279,6 @@ namespace MinimalisticWPF.Generator
                 sourceBuilder.AppendLine("            _isNewTheme = true;");
             }
             sourceBuilder.AppendLine($$"""
-                            _isNewTheme = true;
                          }
                       }
                 """);
