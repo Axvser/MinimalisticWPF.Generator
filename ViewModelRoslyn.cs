@@ -199,7 +199,7 @@ namespace MinimalisticWPF.Generator
             if (IsAop)
             {
                 builder.AppendLine($$"""
-                                           public {{strAop}} Proxy { get; private set; }
+                                           public required {{strAop}} Proxy { get; set; }
                                      """);
                 builder.AppendLine();
             }
