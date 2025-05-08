@@ -17,6 +17,7 @@ namespace MinimalisticWPF.Generator
 
         protected const string FULLNAME_MONOCONFIG = "global::MinimalisticWPF.SourceGeneratorMark.MonoBehaviourAttribute";
         protected const string FULLNAME_CONSTRUCTOR = "global::MinimalisticWPF.SourceGeneratorMark.ConstructorAttribute";
+        protected const string FULLNAME_IGNORECONSTRUCTOR = "global::MinimalisticWPF.SourceGeneratorMark.IgnoreConstructorGenerationAttribute";
 
         internal ClassRoslyn(ClassDeclarationSyntax classDeclarationSyntax, INamedTypeSymbol namedTypeSymbol, Compilation compilation)
         {
@@ -26,6 +27,7 @@ namespace MinimalisticWPF.Generator
 
             IsAop = AnalizeHelper.IsAopClass(classDeclarationSyntax);
             ReadMonoConfig(namedTypeSymbol);
+            ReadConstructorConfig(namedTypeSymbol);
         }
 
         public ClassDeclarationSyntax Syntax { get; set; }
@@ -36,6 +38,9 @@ namespace MinimalisticWPF.Generator
 
         public bool IsMono { get; set; } = false;
         public double MonoSpan { get; set; } = 17;
+
+        public bool CanGenerateConstructor { get; set; } = true;
+
         private void ReadMonoConfig(INamedTypeSymbol symbol)
         {
             var attributeData = symbol.GetAttributes()
@@ -44,6 +49,15 @@ namespace MinimalisticWPF.Generator
             {
                 IsMono = true;
                 MonoSpan = (double)attributeData.ConstructorArguments[0].Value!;
+            }
+        }
+        private void ReadConstructorConfig(INamedTypeSymbol symbol)
+        {
+            var attributeData = symbol.GetAttributes()
+                .FirstOrDefault(ad => ad.AttributeClass?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == FULLNAME_IGNORECONSTRUCTOR);
+            if (attributeData != null)
+            {
+                CanGenerateConstructor = false;
             }
         }
 

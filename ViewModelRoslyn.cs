@@ -58,8 +58,8 @@ namespace MinimalisticWPF.Generator
             builder.AppendLine(GenerateNamespace());
             builder.AppendLine(GeneratePartialClass());
             builder.AppendLine(GenerateConstructor());
-            builder.AppendLine(GenerateIPC());
             builder.AppendLine(GenerateInitializeMinimalisticWPF());
+            builder.AppendLine(GenerateIPC());
             builder.AppendLine(GenerateIMF());
             builder.AppendLine(GenerateEnd());
 
@@ -148,6 +148,8 @@ namespace MinimalisticWPF.Generator
         }
         public string GenerateConstructor()
         {
+            if (!CanGenerateConstructor) return string.Empty;
+
             var acc = AnalizeHelper.GetAccessModifier(Symbol);
 
             var methods = Symbol.GetMembers()

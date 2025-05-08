@@ -301,6 +301,8 @@ namespace MinimalisticWPF.Generator
         }
         public string GenerateConstructor()
         {
+            if (!CanGenerateConstructor) return string.Empty;
+
             var acc = AnalizeHelper.GetAccessModifier(Symbol);
 
             var methods = Symbol.GetMembers()
