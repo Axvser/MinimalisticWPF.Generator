@@ -25,6 +25,7 @@ namespace MinimalisticWPF.Generator
         const string NAMESPACE_HOTKEY = "global::MinimalisticWPF.HotKey.";
         const string NAMESPACE_IHOTKEY = "global::MinimalisticWPF.StructuralDesign.HotKey.";
         const string NAMESPACE_SCG = "global::System.Collections.Generic.";
+        const string NAMESPACE_TRANSITIONEX = "global::MinimalisticWPF.TransitionSystem.TransitionExtension.";
         const string METHOD_T_D = "global::MinimalisticWPF.Tools.Dependency.DependencyPropertyHelperEx.IsPropertySetInXaml";
 
         internal ViewRoslyn(ClassDeclarationSyntax classDeclarationSyntax, INamedTypeSymbol namedTypeSymbol, Compilation compilation) : base(classDeclarationSyntax, namedTypeSymbol, compilation)
@@ -482,7 +483,7 @@ namespace MinimalisticWPF.Generator
             }
             if (IsAop)
             {
-                builder.AppendLine($"         Proxy = this.CreateProxy<{strAop}>();");
+                builder.AppendLine($"         Proxy = {NAMESPACE_PROXYEX}CreateProxy<{strAop}>(this);");
             }
             if (IsDynamicTheme)
             {
@@ -490,8 +491,8 @@ namespace MinimalisticWPF.Generator
             }
             if (IsHover)
             {
-                builder.AppendLine($"         HoveredTransition.SetParams(TransitionParams.Hover);");
-                builder.AppendLine($"         NoHoveredTransition.SetParams(TransitionParams.Hover);");
+                builder.AppendLine($"         HoveredTransition.SetParams({NAMESPACE_TRANSITOIN}TransitionParams.Hover);");
+                builder.AppendLine($"         NoHoveredTransition.SetParams({NAMESPACE_TRANSITOIN}TransitionParams.Hover);");
                 builder.AppendLine($$"""
                          HoveredTransition.TransitionParams.Start += () =>
                          {
@@ -517,6 +518,7 @@ namespace MinimalisticWPF.Generator
             {
                 builder.AppendLine($"             CurrentTheme = {NAMESPACE_THEME}DynamicTheme.CurrentTheme;");
             }
+            LoadNoHoverValueInitialBody(builder, themeGroups);
             LoadHoverValueInitialBody(builder, themeGroups);
             builder.AppendLine("         };");
             if (IsMono)
@@ -598,7 +600,13 @@ namespace MinimalisticWPF.Generator
                         symbol.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
                         $"{AnalizeHelper.ExtractThemeName(config.Item2)}{symbol.Name}",
                         AnalizeHelper.GetDefaultInitialText(symbol.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)));
-                        dp_factory.SetterBody.Add($"      global::MinimalisticWPF.Theme.DynamicTheme.SetIsolatedValue(target,typeof({config.Item2}),\"{TAG_PROXY}{config.Item1}\",newValue);");
+                        dp_factory.SetterBody.Add($"            global::MinimalisticWPF.Theme.DynamicTheme.SetIsolatedValue(target,typeof({config.Item2}),\"{TAG_PROXY}{config.Item1}\",newValue);");
+                        dp_factory.SetterBody.Add($$"""
+                                        if(target.CurrentTheme == typeof({{config.Item2}}))
+                                        {
+                                            target.{{symbol.Name}} = newValue;
+                                        }
+                            """);
                         factories.Add(dp_factory);
                     }
                 }
@@ -717,13 +725,13 @@ namespace MinimalisticWPF.Generator
             sourceBuilder.AppendLine();
             sourceBuilder.AppendLine("      private void UpdateHoverState()");
             sourceBuilder.AppendLine("      {");
-            sourceBuilder.AppendLine("""
+            sourceBuilder.AppendLine($$"""
                          var copy = _runningHovers;
                          foreach (var item in copy)
                          {
                             item.Dispose();
                          }
-                         _runningHovers = this.BeginTransitions(IsHovered ? HoveredTransition : NoHoveredTransition);
+                         _runningHovers = {{NAMESPACE_TRANSITIONEX}}BeginTransitions(this, IsHovered ? HoveredTransition : NoHoveredTransition);
                 """);
             sourceBuilder.AppendLine("      }");
             sourceBuilder.AppendLine();
@@ -805,19 +813,19 @@ namespace MinimalisticWPF.Generator
                         propertySymbol.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
                         nohoveredName,
                         $"{AnalizeHelper.GetDefaultInitialText(propertySymbol.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat))}");
-                    dp_factory1.SetterBody.Add($"      target.HoveredTransition.SetProperty(x => x.{propertySymbol.Name},newValue);");
+                    dp_factory1.SetterBody.Add($"            target.HoveredTransition.SetProperty(x => x.{propertySymbol.Name},newValue);");
                     dp_factory1.SetterBody.Add($$"""
-                              if(!target.IsHoverChanging && target.IsHovered && !target.IsThemeChanging)
-                              {
-                                 target.{{hover}} = newValue;
-                              }
+                                    if(!target.IsHoverChanging && target.IsHovered && !target.IsThemeChanging)
+                                    {
+                                        target.{{hover}} = newValue;
+                                    }
                         """);
-                    dp_factory2.SetterBody.Add($"      target.NoHoveredTransition.SetProperty(x => x.{propertySymbol.Name},newValue);");
+                    dp_factory2.SetterBody.Add($"            target.NoHoveredTransition.SetProperty(x => x.{propertySymbol.Name},newValue);");
                     dp_factory2.SetterBody.Add($$"""
-                              if(!target.IsHoverChanging && !target.IsHovered && !target.IsThemeChanging)
-                              {
-                                 target.{{hover}} = newValue;
-                              }
+                                    if(!target.IsHoverChanging && !target.IsHovered && !target.IsThemeChanging)
+                                    {
+                                        target.{{hover}} = newValue;
+                                    }
                         """);
                     factories.Add(dp_factory1);
                     factories.Add(dp_factory2);
@@ -842,7 +850,7 @@ namespace MinimalisticWPF.Generator
                             nohoveredName,
                             initialText);
                         dp_factory1.SetterBody.Add($$"""
-                                  if(target.CurrentTheme == typeof({{theme.Item2}}))
+                                        if(target.CurrentTheme == typeof({{theme.Item2}}))
                                         {
                                            target.HoveredTransition.SetProperty(x => x.{{propertySymbol.Name}}, newValue);
                                            if(!target.IsHoverChanging && target.IsHovered && !target.IsThemeChanging)
@@ -852,10 +860,10 @@ namespace MinimalisticWPF.Generator
                                         }
                             """);
                         dp_factory2.SetterBody.Add($$"""
-                                  global::MinimalisticWPF.Theme.DynamicTheme.SetIsolatedValue(target,typeof({{theme.Item2}}),"{{TAG_PROXY}}{{propertySymbol.Name}}",newValue);
+                                        global::MinimalisticWPF.Theme.DynamicTheme.SetIsolatedValue(target,typeof({{theme.Item2}}),"{{TAG_PROXY}}{{propertySymbol.Name}}",newValue);
                             """);
                         dp_factory2.SetterBody.Add($$"""
-                                  if(target.CurrentTheme == typeof({{theme.Item2}}))
+                                        if(target.CurrentTheme == typeof({{theme.Item2}}))
                                         {
                                            target.NoHoveredTransition.SetProperty(x => x.{{propertySymbol.Name}}, newValue);
                                            if(!target.IsHoverChanging && !target.IsHovered && !target.IsThemeChanging)
@@ -997,18 +1005,22 @@ namespace MinimalisticWPF.Generator
                    """;
         }
 
+        private void LoadNoHoverValueInitialBody(StringBuilder builder, IEnumerable<IGrouping<string, Tuple<string, string, IEnumerable<string>>>> themeGroups)
+        {
+            foreach (var themeGroup in themeGroups.Where(t => !Hovers.Contains(t.Key)))
+            {
+                var propertySymbol = PropertyTree.FirstOrDefault(p => p.Name == themeGroup.Key);
+                if (propertySymbol is null) continue;
+                foreach (var theme in themeGroup)
+                {
+                    var themeName = AnalizeHelper.ExtractThemeName(theme.Item2);
+                    var themedpName = $"{themeName}{theme.Item1}";
+                    builder.AppendLine($"             _innerOn{themedpName}Changed(this,new {NAMESPACE_WINDOWS}DependencyPropertyChangedEventArgs({themedpName}Property, {themedpName}, {themedpName}));");
+                }
+            }
+        }
         private void LoadHoverValueInitialBody(StringBuilder builder, IEnumerable<IGrouping<string, Tuple<string, string, IEnumerable<string>>>> themeGroups)
         {
-            foreach (var property in PropertyTree.Where(p => Themes.Any(t => t.Item1 == p.Name)))
-            {
-                var typeName = property.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-                builder.AppendLine($$"""
-                                     if(!{{METHOD_T_D}}(this,{{property.Name}}Property))
-                                     {
-                                         {{property.Name}} = ({{typeName}})(global::MinimalisticWPF.Theme.DynamicTheme.GetIsolatedValue(this,global::MinimalisticWPF.Theme.DynamicTheme.CurrentTheme,"{{TAG_PROXY}}{{property.Name}}")??{{property.Name}});
-                                     }
-                        """);
-            }
             foreach (var hover in Hovers)
             {
                 var themeGroup = themeGroups.FirstOrDefault(t => t.Key == hover);
@@ -1023,11 +1035,7 @@ namespace MinimalisticWPF.Generator
                         var hoveredName = $"{themeName}Hovered{hover}";
                         var hoveredreplace = typeName.Contains('?') ? string.Empty : $"??{propertySymbol.Name}";
                         builder.AppendLine($$""" 
-                                      if({{METHOD_T_D}}(this,{{hoveredName}}Property))
-                                      {
-                                          {{hoveredName}} = {{hoveredName}};
-                                      }
-                                      else
+                                      if(!{{METHOD_T_D}}(this,{{hoveredName}}Property))
                                       {
                                           {{hoveredName}} = ({{typeName}})(global::MinimalisticWPF.Theme.DynamicTheme.GetIsolatedValue(this,typeof({{theme.Item2}}),"{{TAG_PROXY}}{{propertySymbol.Name}}"){{hoveredreplace}});
                                       }
@@ -1035,41 +1043,33 @@ namespace MinimalisticWPF.Generator
                         var nohoveredName = $"{themeName}NoHovered{hover}";
                         var nohoveredreplace = typeName.Contains('?') ? string.Empty : $"??{propertySymbol.Name}";
                         builder.AppendLine($$"""                                  
-                                      if({{METHOD_T_D}}(this,{{nohoveredName}}Property))
-                                      {
-                                          {{nohoveredName}} = {{nohoveredName}};
-                                      }
-                                      else
+                                      if(!{{METHOD_T_D}}(this,{{nohoveredName}}Property))
                                       {
                                           {{nohoveredName}} = ({{typeName}})(global::MinimalisticWPF.Theme.DynamicTheme.GetIsolatedValue(this,typeof({{theme.Item2}}),"{{TAG_PROXY}}{{propertySymbol.Name}}"){{nohoveredreplace}});
                                       }
                          """);
+                        builder.AppendLine($"             _innerOn{hoveredName}Changed(this,new {NAMESPACE_WINDOWS}DependencyPropertyChangedEventArgs({hoveredName}Property, {hoveredName}, {hoveredName}));");
+                        builder.AppendLine($"             _innerOn{nohoveredName}Changed(this,new {NAMESPACE_WINDOWS}DependencyPropertyChangedEventArgs({nohoveredName}Property, {nohoveredName}, {nohoveredName}));");
                     }
                 }
                 else
                 {
                     var hoveredName = $"Hovered{hover}";
-                    builder.AppendLine($$"""    
-                                      if({{METHOD_T_D}}(this,{{hoveredName}}Property))
-                                      {
-                                          {{hoveredName}} = {{hoveredName}};
-                                      }
-                                      else
+                    builder.AppendLine($$"""
+                                      if(!{{METHOD_T_D}}(this,{{hoveredName}}Property))
                                       {
                                           {{hoveredName}} = {{propertySymbol.Name}};
                                       }
                          """);
                     var nohoveredName = $"NoHovered{hover}";
-                    builder.AppendLine($$"""                                  
-                                      if({{METHOD_T_D}}(this,{{nohoveredName}}Property))
-                                      {
-                                          {{nohoveredName}} = {{nohoveredName}};
-                                      }
-                                      else
+                    builder.AppendLine($$"""                                 
+                                      if(!{{METHOD_T_D}}(this,{{nohoveredName}}Property))
                                       {
                                           {{nohoveredName}} = {{propertySymbol.Name}};
                                       }
                          """);
+                    builder.AppendLine($"             _innerOn{hoveredName}Changed(this,new {NAMESPACE_WINDOWS}DependencyPropertyChangedEventArgs({hoveredName}Property, {hoveredName}, {hoveredName}));");
+                    builder.AppendLine($"             _innerOn{nohoveredName}Changed(this,new {NAMESPACE_WINDOWS}DependencyPropertyChangedEventArgs({nohoveredName}Property, {nohoveredName}, {nohoveredName}));");
                 }
             }
         }

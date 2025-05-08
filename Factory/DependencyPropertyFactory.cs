@@ -22,7 +22,7 @@ namespace MinimalisticWPF.Generator.Factory
             var setterBody = new StringBuilder();
             for (int i = 0; i < SetterBody.Count; i++)
             {
-                setterBody.AppendLine($"{RETRACT}{SetterBody[i]}");
+                setterBody.AppendLine($"{SetterBody[i]}");
             }
 
             return $$"""

@@ -301,7 +301,7 @@ namespace MinimalisticWPF.Generator
             builder.AppendLine("      {");
             if (IsAop)
             {
-                builder.AppendLine($"         Proxy = this.CreateProxy<{strAop}>();");
+                builder.AppendLine($"         Proxy = {NAMESPACE_PROXYEX}CreateProxy<{strAop}>(this);");
             }
             if (IsMono)
             {

@@ -13,6 +13,7 @@ namespace MinimalisticWPF.Generator
         protected const string NAMESPACE_TRANSITOIN = "global::MinimalisticWPF.TransitionSystem.";
         protected const string NAMESPACE_THEME = "global::MinimalisticWPF.Theme.";
         protected const string NAMESPACE_MODEL = "global::System.ComponentModel.";
+        protected const string NAMESPACE_PROXYEX = "global::MinimalisticWPF.AspectOriented.ProxyExtension.";
 
         protected const string FULLNAME_MONOCONFIG = "global::MinimalisticWPF.SourceGeneratorMark.MonoBehaviourAttribute";
         protected const string FULLNAME_CONSTRUCTOR = "global::MinimalisticWPF.SourceGeneratorMark.ConstructorAttribute";
@@ -49,12 +50,6 @@ namespace MinimalisticWPF.Generator
         public string GenerateUsing()
         {
             StringBuilder sourceBuilder = new();
-            if (IsAop)
-            {
-                sourceBuilder.AppendLine("using global::MinimalisticWPF.AspectOriented;");
-            }
-            sourceBuilder.AppendLine("using global::MinimalisticWPF.TransitionSystem;");
-            sourceBuilder.AppendLine();
             sourceBuilder.AppendLine("#nullable enable");
             sourceBuilder.AppendLine();
             return sourceBuilder.ToString();
