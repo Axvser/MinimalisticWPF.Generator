@@ -41,7 +41,7 @@ namespace MinimalisticWPF.Generator.Factory
             var setteringBody = new StringBuilder();
             for (int i = 0; i < SetteringBody.Count; i++)
             {
-                if(i == SetteringBody.Count - 1)
+                if (i == SetteringBody.Count - 1)
                 {
                     setteringBody.Append($"{RETRACT}       {SetteringBody[i]}");
                 }
@@ -54,7 +54,7 @@ namespace MinimalisticWPF.Generator.Factory
             var setteredBody = new StringBuilder();
             for (int i = 0; i < SetteredBody.Count; i++)
             {
-                if(i == SetteredBody.Count - 1)
+                if (i == SetteredBody.Count - 1)
                 {
                     setteredBody.Append($"{RETRACT}       {SetteredBody[i]}");
                 }

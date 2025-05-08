@@ -1,7 +1,6 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace MinimalisticWPF.Generator
