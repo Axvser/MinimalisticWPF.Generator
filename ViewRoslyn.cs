@@ -202,6 +202,7 @@ namespace MinimalisticWPF.Generator
             builder.AppendLine(GenerateNamespace());
             builder.AppendLine(GeneratePartialClass());
             builder.AppendLine(GenerateConstructor());
+            builder.AppendLine(GenerateContext());
             builder.AppendLine(GenerateInitializeMinimalisticWPF());
             builder.AppendLine(GenerateITA());
             builder.AppendLine(GenerateView());
@@ -299,17 +300,8 @@ namespace MinimalisticWPF.Generator
             sourceBuilder.AppendLine("      partial void OnThemeChanged(global::System.Type? oldTheme, global::System.Type newTheme);");
             return sourceBuilder.ToString();
         }
-        public string GenerateConstructor()
+        public string GenerateContext()
         {
-            if (!CanGenerateConstructor) return string.Empty;
-
-            var acc = AnalizeHelper.GetAccessModifier(Symbol);
-
-            var methods = Symbol.GetMembers()
-                .OfType<IMethodSymbol>()
-                .Where(m => m.GetAttributes().Any(att => att.AttributeClass?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == FULLNAME_CONSTRUCTOR))
-                .ToList();
-
             StringBuilder builder = new();
             var strAop = $"{NAMESPACE_AOP}{AnalizeHelper.GetInterfaceName(Syntax)}";
             if (IsAop)
@@ -396,7 +388,6 @@ namespace MinimalisticWPF.Generator
 
                     """);
             }
-
             if (IsClick)
             {
                 builder.AppendLine($$"""
@@ -405,7 +396,20 @@ namespace MinimalisticWPF.Generator
                                            public event {{NAMESPACE_WINDOWS}}RoutedEventHandler? Click;
                                      """);
             }
+            return builder.ToString();
+        }
+        public string GenerateConstructor()
+        {
+            if (!CanGenerateConstructor) return string.Empty;
 
+            var acc = AnalizeHelper.GetAccessModifier(Symbol);
+
+            var methods = Symbol.GetMembers()
+                .OfType<IMethodSymbol>()
+                .Where(m => m.GetAttributes().Any(att => att.AttributeClass?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == FULLNAME_CONSTRUCTOR))
+                .ToList();
+
+            StringBuilder builder = new();
             builder.AppendLine($"      {acc} {Symbol.Name}()");
             builder.AppendLine("      {");
             if (IsInitializable)

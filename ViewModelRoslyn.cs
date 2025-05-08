@@ -58,6 +58,7 @@ namespace MinimalisticWPF.Generator
             builder.AppendLine(GenerateNamespace());
             builder.AppendLine(GeneratePartialClass());
             builder.AppendLine(GenerateConstructor());
+            builder.AppendLine(GenerateContext());
             builder.AppendLine(GenerateInitializeMinimalisticWPF());
             builder.AppendLine(GenerateIPC());
             builder.AppendLine(GenerateIMF());
@@ -158,6 +159,42 @@ namespace MinimalisticWPF.Generator
                 .ToList();
 
             StringBuilder builder = new();
+
+            builder.AppendLine($"      {acc} {Symbol.Name}()");
+            builder.AppendLine("      {");
+            builder.AppendLine("         InitializeMinimalisticWPF();");
+            foreach (var method in methods.Where(m => !m.Parameters.Any()))
+            {
+                builder.AppendLine($"         {method.Name}();");
+            }
+            builder.AppendLine("      }");
+
+            var groupedMethods = methods.Where(m => m.Parameters.Any()).GroupBy(m =>
+                string.Join(",", m.Parameters.Select(p => p.Type.ToDisplayString())));
+
+            foreach (var group in groupedMethods)
+            {
+                var parameters = group.Key.Split(',');
+                var parameterList = string.Join(", ", group.First().Parameters.Select(p => $"{p.Type.ToDisplayString()} {p.Name}"));
+                var callParameters = string.Join(", ", group.First().Parameters.Select(p => p.Name));
+
+                builder.AppendLine();
+                builder.AppendLine($"      {acc} {Symbol.Name}({parameterList})");
+                builder.AppendLine("      {");
+                builder.AppendLine("         InitializeMinimalisticWPF();");
+                foreach (var method in group)
+                {
+                    builder.AppendLine($"         {method.Name}({callParameters});");
+                }
+                builder.AppendLine("      }");
+            }
+
+            return builder.ToString();
+        }
+        public string GenerateContext()
+        {
+            var builder = new StringBuilder();
+
             var strAop = $"{NAMESPACE_AOP}{AnalizeHelper.GetInterfaceName(Syntax)}";
             if (IsAop)
             {
@@ -262,35 +299,6 @@ namespace MinimalisticWPF.Generator
                           }
 
                     """);
-            }
-
-            builder.AppendLine($"      {acc} {Symbol.Name}()");
-            builder.AppendLine("      {");
-            builder.AppendLine("         InitializeMinimalisticWPF();");
-            foreach (var method in methods.Where(m => !m.Parameters.Any()))
-            {
-                builder.AppendLine($"         {method.Name}();");
-            }
-            builder.AppendLine("      }");
-
-            var groupedMethods = methods.Where(m => m.Parameters.Any()).GroupBy(m =>
-                string.Join(",", m.Parameters.Select(p => p.Type.ToDisplayString())));
-
-            foreach (var group in groupedMethods)
-            {
-                var parameters = group.Key.Split(',');
-                var parameterList = string.Join(", ", group.First().Parameters.Select(p => $"{p.Type.ToDisplayString()} {p.Name}"));
-                var callParameters = string.Join(", ", group.First().Parameters.Select(p => p.Name));
-
-                builder.AppendLine();
-                builder.AppendLine($"      {acc} {Symbol.Name}({parameterList})");
-                builder.AppendLine("      {");
-                builder.AppendLine("         InitializeMinimalisticWPF();");
-                foreach (var method in group)
-                {
-                    builder.AppendLine($"         {method.Name}({callParameters});");
-                }
-                builder.AppendLine("      }");
             }
 
             return builder.ToString();
