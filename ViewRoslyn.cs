@@ -1005,11 +1005,7 @@ namespace MinimalisticWPF.Generator
                 builder.AppendLine($$"""
                                      if(!{{METHOD_T_D}}(this,{{property.Name}}Property))
                                      {
-                                         var new{{property.Name}} = global::MinimalisticWPF.Theme.DynamicTheme.GetIsolatedValue(this,global::MinimalisticWPF.Theme.DynamicTheme.CurrentTheme,"{{TAG_PROXY}}{{property.Name}}");
-                                         if(new{{property.Name}} != null)
-                                         {
-                                             {{property.Name}} = ({{typeName}})new{{property.Name}};
-                                         }
+                                         {{property.Name}} = ({{typeName}})(global::MinimalisticWPF.Theme.DynamicTheme.GetIsolatedValue(this,global::MinimalisticWPF.Theme.DynamicTheme.CurrentTheme,"{{TAG_PROXY}}{{property.Name}}")??{{property.Name}});
                                      }
                         """);
             }
@@ -1025,6 +1021,7 @@ namespace MinimalisticWPF.Generator
                         var themeName = AnalizeHelper.ExtractThemeName(theme.Item2);
                         var typeName = propertySymbol.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
                         var hoveredName = $"{themeName}Hovered{hover}";
+                        var hoveredreplace = typeName.Contains('?') ? string.Empty : $"??{propertySymbol.Name}";
                         builder.AppendLine($$""" 
                                       if({{METHOD_T_D}}(this,{{hoveredName}}Property))
                                       {
@@ -1032,14 +1029,11 @@ namespace MinimalisticWPF.Generator
                                       }
                                       else
                                       {
-                                          var new{{hoveredName}} = global::MinimalisticWPF.Theme.DynamicTheme.GetIsolatedValue(this,typeof({{theme.Item2}}),"{{TAG_PROXY}}{{propertySymbol.Name}}");
-                                          if(new{{hoveredName}} != null)
-                                          {
-                                              {{hoveredName}} = ({{typeName}})new{{hoveredName}};
-                                          }
+                                          {{hoveredName}} = ({{typeName}})(global::MinimalisticWPF.Theme.DynamicTheme.GetIsolatedValue(this,typeof({{theme.Item2}}),"{{TAG_PROXY}}{{propertySymbol.Name}}"){{hoveredreplace}});
                                       }
                          """);
                         var nohoveredName = $"{themeName}NoHovered{hover}";
+                        var nohoveredreplace = typeName.Contains('?') ? string.Empty : $"??{propertySymbol.Name}";
                         builder.AppendLine($$"""                                  
                                       if({{METHOD_T_D}}(this,{{nohoveredName}}Property))
                                       {
@@ -1047,11 +1041,7 @@ namespace MinimalisticWPF.Generator
                                       }
                                       else
                                       {
-                                          var new{{nohoveredName}} = global::MinimalisticWPF.Theme.DynamicTheme.GetIsolatedValue(this,typeof({{theme.Item2}}),"{{TAG_PROXY}}{{propertySymbol.Name}}");
-                                          if(new{{nohoveredName}} != null)
-                                          {
-                                              {{nohoveredName}} = ({{typeName}})new{{nohoveredName}};
-                                          }
+                                          {{nohoveredName}} = ({{typeName}})(global::MinimalisticWPF.Theme.DynamicTheme.GetIsolatedValue(this,typeof({{theme.Item2}}),"{{TAG_PROXY}}{{propertySymbol.Name}}"){{nohoveredreplace}});
                                       }
                          """);
                     }
