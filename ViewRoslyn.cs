@@ -1011,11 +1011,19 @@ namespace MinimalisticWPF.Generator
             {
                 var propertySymbol = PropertyTree.FirstOrDefault(p => p.Name == themeGroup.Key);
                 if (propertySymbol is null) continue;
+                var typeName = propertySymbol.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+                var hoveredreplace = typeName.Contains('?') ? string.Empty : $"??{propertySymbol.Name}";
                 foreach (var theme in themeGroup)
                 {
                     var themeName = AnalizeHelper.ExtractThemeName(theme.Item2);
                     var themedpName = $"{themeName}{theme.Item1}";
-                    builder.AppendLine($"             _innerOn{themedpName}Changed(this,new {NAMESPACE_WINDOWS}DependencyPropertyChangedEventArgs({themedpName}Property, {themedpName}, {themedpName}));");
+                    builder.AppendLine($$"""
+                                     if(!{{METHOD_T_D}}(this,{{themedpName}}Property))
+                                     {
+                                         {{themedpName}} = ({{typeName}})(global::MinimalisticWPF.Theme.DynamicTheme.GetIsolatedValue(this,typeof({{theme.Item2}}),"{{TAG_PROXY}}{{propertySymbol.Name}}"){{hoveredreplace}});
+                                     }
+                                     _innerOn{{themedpName}}Changed(this,new {{NAMESPACE_WINDOWS}}DependencyPropertyChangedEventArgs({{themedpName}}Property, {{themedpName}}, {{themedpName}}));
+                        """);
                 }
             }
         }
@@ -1028,10 +1036,10 @@ namespace MinimalisticWPF.Generator
                 if (propertySymbol is null) continue;
                 if (themeGroup is not null)
                 {
+                    var typeName = propertySymbol.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
                     foreach (var theme in themeGroup)
                     {
                         var themeName = AnalizeHelper.ExtractThemeName(theme.Item2);
-                        var typeName = propertySymbol.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
                         var hoveredName = $"{themeName}Hovered{hover}";
                         var hoveredreplace = typeName.Contains('?') ? string.Empty : $"??{propertySymbol.Name}";
                         builder.AppendLine($$""" 
