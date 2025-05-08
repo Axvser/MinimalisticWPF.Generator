@@ -29,7 +29,7 @@ namespace MinimalisticWPF.Generator.Factory
                 {{RETRACT}}public {{FullTypeName}} {{PropertyName}}
                 {{RETRACT}}{
                 {{RETRACT}}    get => ({{FullTypeName}})GetValue({{DependencyPropertyName}});
-                {{RETRACT}}    set => SetValue({{DependencyPropertyName}}, value);
+                {{RETRACT}}    set => SetCurrentValue({{DependencyPropertyName}}, value);
                 {{RETRACT}}}
                 {{RETRACT}}public static readonly {{DP_NAMESPACE}}DependencyProperty {{DependencyPropertyName}} =
                 {{RETRACT}}    {{DP_NAMESPACE}}DependencyProperty.Register(

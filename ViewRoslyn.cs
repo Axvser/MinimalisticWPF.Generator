@@ -325,7 +325,7 @@ namespace MinimalisticWPF.Generator
                           public bool CanMonoBehaviour
                           {
                               get { return (bool)GetValue(CanMonoBehaviourProperty); }
-                              set { SetValue(CanMonoBehaviourProperty, value); }
+                              set { SetCurrentValue(CanMonoBehaviourProperty, value); }
                           }
                           public static readonly global::System.Windows.DependencyProperty CanMonoBehaviourProperty =
                               global::System.Windows.DependencyProperty.Register("CanMonoBehaviour", typeof(bool), typeof({{classTypeName}}), new global::System.Windows.PropertyMetadata(true, async (dp, e) =>
@@ -905,7 +905,7 @@ namespace MinimalisticWPF.Generator
                          public uint RecordedModifiers
                          {
                              get { return (uint)GetValue(RecordedModifiersProperty); }
-                             set { SetValue(RecordedModifiersProperty, value); }
+                             set { SetCurrentValue(RecordedModifiersProperty, value); }
                          }
                          public static readonly {{NAMESPACE_WINDOWS}}DependencyProperty RecordedModifiersProperty =
                              {{NAMESPACE_WINDOWS}}DependencyProperty.Register("RecordedModifiers", typeof(uint), typeof({{className}}), new {{NAMESPACE_WINDOWS}}PropertyMetadata(default(uint), Inner_OnModifiersChanged));
@@ -924,7 +924,7 @@ namespace MinimalisticWPF.Generator
                          public uint RecordedKey
                          {
                              get { return (uint)GetValue(RecordedKeyProperty); }
-                             set { SetValue(RecordedKeyProperty, value); }
+                             set { SetCurrentValue(RecordedKeyProperty, value); }
                          }
                          public static readonly {{NAMESPACE_WINDOWS}}DependencyProperty RecordedKeyProperty =
                              {{NAMESPACE_WINDOWS}}DependencyProperty.Register("RecordedKey", typeof(uint), typeof({{className}}), new {{NAMESPACE_WINDOWS}}PropertyMetadata(default(uint), Inner_OnKeysChanged));
