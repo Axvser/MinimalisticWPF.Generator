@@ -476,7 +476,7 @@ namespace MinimalisticWPF.Generator
             {
                 var fstr = (IsFocusable, IsDefaultFocusableStyle) switch
                 {
-                    (true, false) =>$$"""
+                    (true, false) => $$"""
                               Focusable = true;
                               FocusVisualStyle = null;
                      """,
