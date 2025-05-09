@@ -489,8 +489,7 @@ namespace MinimalisticWPF.Generator
                     (false, false) => $$"""
                               Focusable = false;
                               FocusVisualStyle = null;
-                     """,
-                    _ => string.Empty,
+                     """
                 };
                 builder.AppendLine(fstr);
                 builder.AppendLine($$"""
