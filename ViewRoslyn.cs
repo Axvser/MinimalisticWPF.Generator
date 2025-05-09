@@ -14,6 +14,7 @@ namespace MinimalisticWPF.Generator
         const string FULLNAME_HOVERCONFIG = "global::MinimalisticWPF.SourceGeneratorMark.HoverAttribute";
         const string FULLNAME_CLICKCONFIG = "global::MinimalisticWPF.SourceGeneratorMark.ClickModuleAttribute";
         const string FULLNAME_STYLE = "global::System.Windows.Style";
+        const string FULLNAME_FOCUS = "global::MinimalisticWPF.SourceGeneratorMark.FocusModuleAttribute";
 
         const string NAME_STYLE = "Style";
         const string NAME_INITIALIZE = "InitializeComponent";
@@ -42,9 +43,10 @@ namespace MinimalisticWPF.Generator
             Themes = themes;
             LoadPropertySymbolAtTree(namedTypeSymbol, PropertyTree);
             ReadClickConfig(namedTypeSymbol);
+            ReadFocusConfig(namedTypeSymbol);
             IsInitializable = IsInitializeComponentExist(namedTypeSymbol);
             IsHotkey = AnalizeHelper.IsHotKeyClass(namedTypeSymbol);
-            IsView = Hovers.Count > 0 || Themes.Count > 0 || IsClick || IsMono || IsHotkey;
+            IsView = Hovers.Count > 0 || Themes.Count > 0 || IsClick || IsMono || IsHotkey || IsFocus;
             if (IsView)
             {
                 IsHover = Hovers.Any();
@@ -58,6 +60,9 @@ namespace MinimalisticWPF.Generator
         public bool IsClick { get; set; } = false;
         public bool IsHover { get; set; } = false;
         public bool IsHotkey { get; set; } = false;
+        public bool IsFocus { get; set; } = false;
+        public bool IsFocusable { get; set; } = false;
+        public bool IsDefaultFocusableStyle { get; set; } = false;
 
         List<IPropertySymbol> PropertyTree { get; set; } = [];
 
@@ -73,6 +78,18 @@ namespace MinimalisticWPF.Generator
                 IsClick = true;
             }
         }
+        private void ReadFocusConfig(INamedTypeSymbol symbol)
+        {
+            var attributeData = symbol.GetAttributes()
+                .FirstOrDefault(ad => ad.AttributeClass?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == FULLNAME_FOCUS);
+            if (attributeData != null)
+            {
+                IsFocus = true;
+                IsFocusable = (bool)attributeData.ConstructorArguments[0].Value!;
+                IsDefaultFocusableStyle = (bool)attributeData.ConstructorArguments[1].Value!;
+            }
+        }
+
         private static bool IsUIElement(INamedTypeSymbol? symbol)
         {
             if (symbol == null)
@@ -455,6 +472,32 @@ namespace MinimalisticWPF.Generator
             var strAop = $"{NAMESPACE_AOP}{AnalizeHelper.GetInterfaceName(Syntax)}";
             builder.AppendLine($"      private void InitializeMinimalisticWPF()");
             builder.AppendLine("      {");
+            if (IsFocus)
+            {
+                var fstr = (IsFocusable, IsDefaultFocusableStyle) switch
+                {
+                    (true, false) =>$$"""
+                              Focusable = true;
+                              FocusVisualStyle = null;
+                     """,
+                    (true, true) => $$"""
+                              Focusable = true;
+                     """,
+                    (false, true) => $$"""
+                              Focusable = false;
+                     """,
+                    (false, false) => $$"""
+                              Focusable = false;
+                              FocusVisualStyle = null;
+                     """,
+                    _ => string.Empty,
+                };
+                builder.AppendLine(fstr);
+                builder.AppendLine($$"""
+                             MouseEnter += (s, e) => Focus();
+                             MouseLeave += (s, e) => global::System.Windows.Input.Keyboard.ClearFocus();
+                    """);
+            }
             if (IsClick)
             {
                 builder.AppendLine($$"""
