@@ -71,8 +71,8 @@ namespace MinimalisticWPF.Generator.Factory
                 {{RETRACT}}    set 
                 {{RETRACT}}    { 
                 {{RETRACT}}       var old = {{SourceName}}; 
-                {{setteringBody.ToString()}} 
                 {{RETRACT}}       On{{PropertyName}}Changing(old,value); 
+                {{setteringBody.ToString()}}
                 {{RETRACT}}       {{SourceName}} = value; 
                 {{RETRACT}}       On{{PropertyName}}Changed(old,value); 
                 {{setteredBody.ToString()}} 

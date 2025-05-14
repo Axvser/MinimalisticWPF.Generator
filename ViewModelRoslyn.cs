@@ -126,13 +126,14 @@ namespace MinimalisticWPF.Generator
                 var factory = new PropertyFactory(field, PUBLIC, false);
                 var intercept = field.SetterValidation switch
                 {
-                    1 => $"if ({field.FieldName}?.Equals(value) ?? false) return;",
-                    2 => $"if (!CanUpdate{field.PropertyName}(old,value)) return;",
+                    1 => $"if ({field.FieldName} == value) return;",
+                    2 => $"if (object.Equals({field.FieldName}, value)) return;",
+                    3 => $"if (!CanUpdate{field.PropertyName}(old,value)) return;",
                     _ => string.Empty
                 };
                 var interceptmethod = field.SetterValidation switch
                 {
-                    2 => $"      private partial bool CanUpdate{field.PropertyName}({field.TypeName} oldValue, {field.TypeName} newValue);",
+                    3 => $"      private partial bool CanUpdate{field.PropertyName}({field.TypeName} oldValue, {field.TypeName} newValue);",
                     _ => string.Empty
                 };
                 factory.SetteringBody.Add(intercept);
