@@ -540,19 +540,19 @@ namespace MinimalisticWPF.Generator
                 builder.AppendLine($"         HoveredTransition.SetParams({NAMESPACE_TRANSITOIN}TransitionParams.Hover);");
                 builder.AppendLine($"         NoHoveredTransition.SetParams({NAMESPACE_TRANSITOIN}TransitionParams.Hover);");
                 builder.AppendLine($$"""
-                         HoveredTransition.TransitionParams.Start += () =>
+                         HoveredTransition.TransitionParams.Start += (s,e) =>
                          {
                              IsHoverChanging = true;
                          };
-                         HoveredTransition.TransitionParams.Completed += () =>
+                         HoveredTransition.TransitionParams.Completed += (s,e) =>
                          {
                              IsHoverChanging = false;
                          };
-                         NoHoveredTransition.TransitionParams.Start += () =>
+                         NoHoveredTransition.TransitionParams.Start += (s,e) =>
                          {
                              IsHoverChanging = true;
                          };
-                         NoHoveredTransition.TransitionParams.Completed += () =>
+                         NoHoveredTransition.TransitionParams.Completed += (s,e) =>
                          {
                              IsHoverChanging = false;
                          };
