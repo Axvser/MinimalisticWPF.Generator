@@ -223,7 +223,7 @@ namespace MinimalisticWPF.Generator
             builder.AppendLine(GenerateView());
             builder.AppendLine(GenerateHover());
             builder.AppendLine(GenerateHoverControl());
-            builder.AppendLine(GenerateHorKeyComponent());
+            builder.AppendLine(GenerateHotKeyComponent());
             builder.AppendLine(GenerateEnd());
 
             return builder.ToString();
@@ -931,124 +931,164 @@ namespace MinimalisticWPF.Generator
 
             return builder.ToString();
         }
-        public string GenerateHorKeyComponent()
+        public string GenerateHotKeyComponent()
         {
             if (!IsHotkey) return string.Empty;
+
             var className = Symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+            var namespaceWindows = "global::System.Windows"; // WPF相关类型
+            var namespaceSystem = "global::System"; // 基础系统类型
+            var namespaceHotKey = "global::MinimalisticWPF.HotKey"; // 热键相关类型
+            var namespaceSCG = "global::System.Collections.Generic"; // 集合类型
+            var namespaceInput = "global::System.Windows.Input"; // 输入相关类型
+
             return $$"""
-                         private bool _ishotkeyregistered = false;
-                         public bool IsHotKeyRegistered
-                         {
-                             get => _ishotkeyregistered;
-                             protected set
-                             {
-                                _ishotkeyregistered = value;
-                                if(value)
-                                {
-                                   OnSuccessHotKeyRegister();
-                                }
-                                else
-                                {
-                                   OnFailedHotKeyRegister();
-                                }
-                             }
-                         }
-                         partial void OnFailedHotKeyRegister();
-                         partial void OnSuccessHotKeyRegister();
+            public event {{namespaceSystem}}.Action? HotKeyRegisterSuccessed;
+            public event {{namespaceSystem}}.Action? HotKeyRegisterFailed;
+            public event {{namespaceHotKey}}.HotKeyEventHandler? HotKeyInvoking;
+            public event {{namespaceHotKey}}.HotKeyEventHandler? HotKeyInvoked;
+            public event {{namespaceSystem}}.Action? HotKeyCovering;
+            public event {{namespaceSystem}}.Action? HotKeyCovered;
+            public event {{namespaceSystem}}.Action? HotKeyUpdating;
+            public event {{namespaceSystem}}.Action? HotKeyUpdated;
+            public event {{namespaceSystem}}.Action<uint, uint>? ModifiersChanged;
+            public event {{namespaceSystem}}.Action<uint, uint>? KeyChanged;
 
-                         public uint RecordedModifiers
-                         {
-                             get { return (uint)GetValue(RecordedModifiersProperty); }
-                             set { SetValue(RecordedModifiersProperty, value); }
-                         }
-                         public static readonly {{NAMESPACE_WINDOWS}}DependencyProperty RecordedModifiersProperty =
-                             {{NAMESPACE_WINDOWS}}DependencyProperty.Register("RecordedModifiers", typeof(uint), typeof({{className}}), new {{NAMESPACE_WINDOWS}}PropertyMetadata(default(uint), Inner_OnModifiersChanged));
-                         public static void Inner_OnModifiersChanged({{NAMESPACE_WINDOWS}}DependencyObject d, {{NAMESPACE_WINDOWS}}DependencyPropertyChangedEventArgs e)
-                         {
-                             if(d is {{className}} target)
-                             {
-                                global::MinimalisticWPF.HotKey.GlobalHotKey.Unregister((uint)e.OldValue,target.RecordedKey);
-                                var id = global::MinimalisticWPF.HotKey.GlobalHotKey.Register(target);
-                                target.IsHotKeyRegistered = id != 0 && id != -1;
-                                target.OnModifiersChanged((uint)e.OldValue, (uint)e.NewValue);
-                             }                            
-                         }
-                         partial void OnModifiersChanged(uint oldKeys, uint newKeys);
+            private bool _ishotkeyregistered = false;
+            public virtual bool IsHotKeyRegistered
+            {
+                get => _ishotkeyregistered;
+                protected set
+                {
+                    _ishotkeyregistered = value;
+                    if (value)
+                    {
+                        OnHotKeyRegisterSuccessed();
+                        HotKeyRegisterSuccessed?.Invoke();
+                    }
+                    else
+                    {
+                        OnHotKeyRegisterFailed();
+                        HotKeyRegisterFailed?.Invoke();
+                    }
+                }
+            }
+            partial void OnHotKeyRegisterSuccessed();
+            partial void OnHotKeyRegisterFailed();
 
-                         public uint RecordedKey
-                         {
-                             get { return (uint)GetValue(RecordedKeyProperty); }
-                             set { SetValue(RecordedKeyProperty, value); }
-                         }
-                         public static readonly {{NAMESPACE_WINDOWS}}DependencyProperty RecordedKeyProperty =
-                             {{NAMESPACE_WINDOWS}}DependencyProperty.Register("RecordedKey", typeof(uint), typeof({{className}}), new {{NAMESPACE_WINDOWS}}PropertyMetadata(default(uint), Inner_OnKeysChanged));
-                         public static void Inner_OnKeysChanged({{NAMESPACE_WINDOWS}}DependencyObject d, {{NAMESPACE_WINDOWS}}DependencyPropertyChangedEventArgs e)
-                         {
-                             if(d is {{className}} target)
-                             {
-                                global::MinimalisticWPF.HotKey.GlobalHotKey.Unregister(target.RecordedModifiers,(uint)e.OldValue);
-                                var id = global::MinimalisticWPF.HotKey.GlobalHotKey.Register(target);
-                                target.IsHotKeyRegistered = id != 0 && id != -1;
-                                target.OnKeysChanged((uint)e.OldValue, (uint)e.NewValue);
-                             }
-                         }
-                         partial void OnKeysChanged(uint oldKeys, uint newKeys);
+            public uint RecordedModifiers
+            {
+                get { return (uint)GetValue(RecordedModifiersProperty); }
+                set { SetValue(RecordedModifiersProperty, value); }
+            }
+            public static readonly {{namespaceWindows}}.DependencyProperty RecordedModifiersProperty =
+                {{namespaceWindows}}.DependencyProperty.Register("RecordedModifiers", typeof(uint), typeof({{className}}), new {{namespaceWindows}}.PropertyMetadata(default(uint), Inner_OnModifiersChanged));
+            
+            public static void Inner_OnModifiersChanged({{namespaceWindows}}.DependencyObject d, {{namespaceWindows}}.DependencyPropertyChangedEventArgs e)
+            {
+                if (d is {{className}} target)
+                {
+                    {{namespaceHotKey}}.GlobalHotKey.Unregister((uint)e.OldValue, target.RecordedKey);
+                    var id = {{namespaceHotKey}}.GlobalHotKey.Register(target);
+                    target.IsHotKeyRegistered = id != 0 && id != -1;
+                    var oldValue = (uint)e.OldValue;
+                    var newValue = (uint)e.NewValue;
+                    target.ModifiersChanged?.Invoke(oldValue, newValue);
+                    target.OnModifiersChanged(oldValue, newValue);
+                }
+            }
+            partial void OnModifiersChanged(uint oldKeys, uint newKeys);
 
-                         public event {{NAMESPACE_HOTKEY}}HotKeyEventHandler? HotKeyInvoked;
+            public uint RecordedKey
+            {
+                get { return (uint)GetValue(RecordedKeyProperty); }
+                set { SetValue(RecordedKeyProperty, value); }
+            }
+            public static readonly {{namespaceWindows}}.DependencyProperty RecordedKeyProperty =
+                {{namespaceWindows}}.DependencyProperty.Register("RecordedKey", typeof(uint), typeof({{className}}), new {{namespaceWindows}}.PropertyMetadata(default(uint), Inner_OnKeyChanged));
+            
+            public static void Inner_OnKeyChanged({{namespaceWindows}}.DependencyObject d, {{namespaceWindows}}.DependencyPropertyChangedEventArgs e)
+            {
+                if (d is {{className}} target)
+                {
+                    {{namespaceHotKey}}.GlobalHotKey.Unregister(target.RecordedModifiers, (uint)e.OldValue);
+                    var id = {{namespaceHotKey}}.GlobalHotKey.Register(target);
+                    target.IsHotKeyRegistered = id != 0 && id != -1;
+                    var oldValue = (uint)e.OldValue;
+                    var newValue = (uint)e.NewValue;
+                    target.KeyChanged?.Invoke(oldValue, newValue);
+                    target.OnKeyChanged(oldValue, newValue);
+                }
+            }
+            partial void OnKeyChanged(uint oldKeys, uint newKeys);
 
-                         public virtual void InvokeHotKey()
-                         {
-                             OnHotKeyHandling();
-                             HotKeyInvoked?.Invoke(this, new {{NAMESPACE_HOTKEY}}HotKeyEventArgs(RecordedModifiers,RecordedKey));
-                             OnHotKeyHandled();
-                         }
-                         partial void OnHotKeyHandling();
-                         partial void OnHotKeyHandled();
+            public virtual void InvokeHotKey()
+            {
+                var args = new {{namespaceHotKey}}.HotKeyEventArgs(RecordedModifiers, RecordedKey);
+                HotKeyInvoking?.Invoke(this, args);
+                OnHotKeyInvoking();
+                HotKeyInvoked?.Invoke(this, args);
+                OnHotKeyInvoked();
+            }
+            partial void OnHotKeyInvoking();
+            partial void OnHotKeyInvoked();
 
-                         public virtual void CoverHotKey()
-                         {
-                             OnHotKeyCovering();
-                             modifiers.Clear();
-                             key = 0x0000;
-                             RecordedModifiers = 0x0000;
-                             RecordedKey = 0x0000;
-                             OnHotKeyCovered();
-                         }
-                         partial void OnHotKeyCovering();
-                         partial void OnHotKeyCovered();
+            public virtual void CoverHotKey()
+            {
+                HotKeyCovering?.Invoke();
+                OnHotKeyCovering();
+                modifiers.Clear();
+                key = 0x0000;
+                RecordedModifiers = 0x0000;
+                RecordedKey = 0x0000;
+                HotKeyCovered?.Invoke();
+                OnHotKeyCovered();
+            }
+            partial void OnHotKeyCovering();
+            partial void OnHotKeyCovered();
 
-                         private {{NAMESPACE_SCG}}HashSet<{{NAMESPACE_HOTKEY}}VirtualModifiers> modifiers = [];
-                         private {{NAMESPACE_HOTKEY}}VirtualKeys key = 0x0000;
+            private {{namespaceSCG}}.HashSet<{{namespaceHotKey}}.VirtualModifiers> modifiers = [];
+            private {{namespaceHotKey}}.VirtualKeys key = 0x0000;
 
-                         protected virtual void OnHotKeyReceived(object sender, global::System.Windows.Input.KeyEventArgs e)
-                         {
-                             var input = (e.Key == global::System.Windows.Input.Key.System ? e.SystemKey : e.Key);
-                             if ({{NAMESPACE_HOTKEY}}HotKeyHelper.WinApiModifiersMapping.TryGetValue(input, out var modifier))
-                             {
-                                 if (!modifiers.Remove(modifier))
-                                 {
-                                     modifiers.Add(modifier);
-                                 }
-                             }
-                             else if ({{NAMESPACE_HOTKEY}}HotKeyHelper.WinApiKeysMapping.TryGetValue(input, out var trigger))
-                             {
-                                 key = trigger;
-                             }
+            public virtual void OnHotKeyReceived(object sender, {{namespaceInput}}.KeyEventArgs e)
+            {
+                var input = (e.Key == {{namespaceInput}}.Key.System ? e.SystemKey : e.Key);
+                if ({{namespaceHotKey}}.HotKeyHelper.WinApiModifiersMapping.TryGetValue(input, out var modifier))
+                {
+                    if (!modifiers.Remove(modifier))
+                    {
+                        modifiers.Add(modifier);
+                    }
+                }
+                else if ({{namespaceHotKey}}.HotKeyHelper.WinApiKeysMapping.TryGetValue(input, out var trigger))
+                {
+                    key = trigger;
+                }
 
-                             e.Handled = true;
-                             UpdateHotKey();
-                         }
+                e.Handled = true;
+                UpdateHotKey();
+            }
 
-                         protected virtual void UpdateHotKey()
-                         {
-                             OnHotKeyUpdating();
-                             RecordedModifiers = {{NAMESPACE_HOTKEY}}HotKeyHelper.CombineModifiers(modifiers);
-                             RecordedKey = (uint)key;
-                             OnHotKeyUpdated();
-                         }
-                         partial void OnHotKeyUpdating();
-                         partial void OnHotKeyUpdated();
-                   """;
+            public virtual void UpdateHotKey()
+            {
+                HotKeyUpdating?.Invoke();
+                OnHotKeyUpdating();
+                RecordedModifiers = {{namespaceHotKey}}.HotKeyHelper.CombineModifiers(modifiers);
+                RecordedKey = (uint)key;
+                HotKeyUpdated?.Invoke();
+                OnHotKeyUpdated();
+            }
+            partial void OnHotKeyUpdating();
+            partial void OnHotKeyUpdated();
+
+            public virtual void UpdateHotKeyCache(
+                {{namespaceSCG}}.HashSet<{{namespaceHotKey}}.VirtualModifiers> modifiers,
+                {{namespaceHotKey}}.VirtualKeys key)
+            {
+                this.modifiers = modifiers;
+                this.key = key;
+            }
+      """;
         }
 
         private void LoadNoHoverValueInitialBody(StringBuilder builder, IEnumerable<IGrouping<string, Tuple<string, string, IEnumerable<string>>>> themeGroups)
