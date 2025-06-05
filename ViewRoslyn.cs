@@ -945,8 +945,8 @@ namespace MinimalisticWPF.Generator
             return $$"""
             public event {{namespaceSystem}}.Action? HotKeyRegisterSuccessed;
             public event {{namespaceSystem}}.Action? HotKeyRegisterFailed;
-            public event {{namespaceHotKey}}.HotKeyEventHandler? HotKeyInvoking;
-            public event {{namespaceHotKey}}.HotKeyEventHandler? HotKeyInvoked;
+            public event {{namespaceSystem}}.EventHandler<{{namespaceHotKey}}.HotKeyEventArgs>? HotKeyInvoking;
+            public event {{namespaceSystem}}.EventHandler<{{namespaceHotKey}}.HotKeyEventArgs>? HotKeyInvoked;
             public event {{namespaceSystem}}.Action? HotKeyCovering;
             public event {{namespaceSystem}}.Action? HotKeyCovered;
             public event {{namespaceSystem}}.Action? HotKeyUpdating;
